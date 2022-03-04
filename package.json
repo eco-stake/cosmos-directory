@@ -1,0 +1,20 @@
+{
+  "name": "cosmos-directory",
+  "version": "0.1.0",
+  "description": "",
+  "main": "proxy.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@koa/cors": "^3.1.0",
+    "axios": "^0.26.0",
+    "koa": "^2.13.4",
+    "koa-proxies": "^0.12.2",
+    "koa-router": "^10.1.1",
+    "koa-subdomain": "^3.0.0",
+    "lodash": "^4.17.21"
+  }
+}
