@@ -12,30 +12,27 @@ const registry = ChainRegistry(dir)
 
 const intervals = {}
 const currentUrls = {}
-let chains = {}
 
 function updateChains(){
-  return registry.refresh().then(newChains => {
-    chains = newChains
-    Object.keys(chains).forEach(key => {
+  Object.keys(registry.chains).forEach(key => {
+    clearInterval(intervals[key])
+  })
+  return registry.refresh().then(() => {
+    Object.keys(registry.chains).forEach(key => {
       updateApis(key)
-      clearInterval(intervals[key])
       intervals[key] = setInterval(() => {
         updateApis(key)
       }, 30_000)
     })
-    return chains
   })
 }
 
 function updateApis(key){
-  const chain = chains[key]
+  const chain = registry.getChain(key)
   chain.apis.refreshUrls()
 }
 
 function loadBalanceProxy(key, type, options, params, ctx){
-  const chain = chains[key]
-  const url = chain && chain.apis.bestUrl(type)
   const regexp = new RegExp("\^\\/"+key, 'g');
   const response = {
     changeOrigin: true,
@@ -43,24 +40,31 @@ function loadBalanceProxy(key, type, options, params, ctx){
     target: 'https://cosmos.directory',
     events: {
       proxyReq: (proxyReq, req, res) => {
-        // if(!chain){
-        //   console.log('no chain')
-        //   res.writeHead(404, {
-        //     'Content-Type': 'text/plain'
-        //   });
-        //   return res.end('Not found');
-        // }
-        // if(!url){
-        //   console.log('no url')
-        //   res.writeHead(502, {
-        //     'Content-Type': 'text/plain'
-        //   });
-        //   return res.end('No servers available');
-        // }
+        const chain = registry.getChain(key)
+        const url = chain && chain.apis.bestUrl(type)
+        if(!chain){
+          console.log(registry.chains, key)
+          console.log('no chain')
+          res.writeHead(404, {
+            'Content-Type': 'text/plain'
+          });
+          return res.end('Not found');
+        }
+        if(!url){
+          console.log(chain, chain.apis)
+          console.log('no url')
+          res.writeHead(502, {
+            'Content-Type': 'text/plain'
+          });
+          return res.end('No servers available');
+        }
+        res.target = url
       },
     }
   }
 
+  const chain = registry.getChain(key)
+  const url = chain && chain.apis.bestUrl(type)
   if(url){
     response.target = url
     response.logs = true
@@ -92,16 +96,16 @@ subdomain.use('rest', proxy("/:chain", (req, res, ctx) => loadBalanceProxy(req.c
 subdomain.use('rpc', proxy("/:chain", (req, res, ctx) => loadBalanceProxy(req.chain, 'rpc', req, res, ctx)));
 
 router.get('/', (ctx, next) => {
-  renderJson(ctx, Object.keys(chains))
+  renderJson(ctx, Object.keys(registry.chains))
 });
 
 router.get('/:chain', (ctx, next) => {
-  const chain = chains[ctx.params.chain]
+  const chain = registry.getChain(key)
   renderJson(ctx, chain && chain.chain)
 });
 
 router.get('/:chain/assetlist', (ctx, next) => {
-  const chain = chains[ctx.params.chain]
+  const chain = registry.getChain(key)
   renderJson(ctx, chain && chain.assetlist)
 });
 

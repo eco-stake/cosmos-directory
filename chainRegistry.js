@@ -6,7 +6,7 @@ const Chain = require('./chain')
 
 const ChainRegistry = (repoDir) => {
   const repoUrl = 'https://github.com/cosmos/chain-registry'
-  let chains = {}
+  var chains
 
   const setConfig = () => {
     return git.setConfig({
@@ -18,14 +18,16 @@ const ChainRegistry = (repoDir) => {
   }
 
   const updateRepo = () => {
-    try {
+    return setConfig().then(() => {
       return git.pull({ fs, http, dir: repoDir, ref: 'master', singleBranch: true })
-    } catch (e) {
-      console.log('Failed to pull repo')
-    }
+    })
   }
 
-  const getChain = (dir) => {
+  const getChain = (name) => {
+    return chains[name]
+  }
+
+  const fetchChain = (dir) => {
     const chainPath = path.join(repoDir, dir, 'chain.json')
     const assetListPath = path.join(repoDir, dir, 'assetlist.json')
     const chainData = fs.readFileSync(chainPath)
@@ -36,27 +38,35 @@ const ChainRegistry = (repoDir) => {
     return Chain(chainJson, assetListJson)
   }
 
-  const refresh = async () => {
-    await setConfig()
-    await updateRepo()
+  const refresh = () => {
+    return updateRepo().then(() => {
+      loadChains()
+    })
+  }
 
+  const loadChains = () => {
     const directories = fs.readdirSync(repoDir, { withFileTypes: true })
       .filter((item) => item.isDirectory())
       .map((item) => item.name);
 
     chains = directories.reduce((sum, dir) => {
-      if(dir.startsWith('.') || dir == 'testnets') return sum
+      if(dir.startsWith('.') || dir === 'testnets') return sum
 
-      sum[dir] = getChain(dir)
+      sum[dir] = fetchChain(dir)
 
       return sum
     }, {})
 
+    console.log(Object.keys(chains))
     return chains
   }
 
+  chains = loadChains()
+
   return {
-    refresh
+    refresh,
+    chains,
+    getChain
   }
 }
 

@@ -3,7 +3,7 @@ const _ = require("lodash");
 
 const ChainApis = (chainId, apis) => {
   const urlTypes = ['rest', 'rpc']
-  const currentUrls = {
+  var currentUrls = {
     rpc: [],
     rest: []
   }
@@ -18,6 +18,7 @@ const ChainApis = (chainId, apis) => {
   }
 
   const bestUrls = (type) => {
+    console.log(currentUrls[type])
     const best = currentUrls[type][0]
     if(!best) return []
 
@@ -89,7 +90,8 @@ const ChainApis = (chainId, apis) => {
 
   return {
     bestUrl,
-    refreshUrls
+    refreshUrls,
+    currentUrls
   }
 }
 
