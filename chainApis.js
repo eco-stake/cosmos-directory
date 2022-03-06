@@ -21,7 +21,7 @@ const ChainApis = (chainId, apis) => {
     const best = currentUrls[type][0]
     if(!best) return []
 
-    return currentUrls[type].filter(el => el.height >= best.height - 5).map(el => el.url)
+    return currentUrls[type].filter(el => el.height >= (best.height - 5)).map(el => el.url)
   }
 
   const refreshUrls = () => {
@@ -30,11 +30,7 @@ const ChainApis = (chainId, apis) => {
 
       const prev = currentUrls[type]
       getOrderedUrls(type).then(urls => {
-        if(urls.length > 0){
-          currentUrls[type] = urls
-        }else if(currentUrls.length > 0){
-          console.log('Not removing last URLs', currentUrls[type])
-        }
+        currentUrls[type] = urls
         if(prev.length > urls.length){
           console.log('Removing', chainId, type, _.difference(prev, urls))
         }else if(prev.length < urls.length){
@@ -66,12 +62,12 @@ const ChainApis = (chainId, apis) => {
       height = data.block.header.height
     }
     if(!height) return {url, height: 0}
-    return {url, height: height}
+    return {url, height: parseInt(height)}
   }
 
   const getBlockHeights = (urls, path, callback) => {
     return mapAsync(urls, (url) => {
-      return axios.get(url + '/' + path, {timeout: 5000})
+      return axios.get(url + '/' + path, {timeout: 10000})
         .then(res => res.data)
         .then(data => {
           return callback(url, data)
