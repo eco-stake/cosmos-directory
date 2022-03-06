@@ -69,6 +69,15 @@ function loadBalanceProxy(key, type, options, params, ctx){
   return response
 }
 
+function renderJson(ctx, object){
+  if(object){
+    ctx.body = object
+  }else{
+    ctx.status = 404
+    ctx.body = 'Not found'
+  }
+}
+
 updateChains()
 const registryInterval = setInterval(updateChains, 60_000 * 30)
 
@@ -81,7 +90,17 @@ subdomain.use('rest', proxy("/:chain", (req, res, ctx) => loadBalanceProxy(req.c
 subdomain.use('rpc', proxy("/:chain", (req, res, ctx) => loadBalanceProxy(req.chain, 'rpc', req, res, ctx)));
 
 router.get('/', (ctx, next) => {
-  ctx.body = Object.keys(chains)
+  renderJson(ctx, Object.keys(chains))
+});
+
+router.get('/:chain', (ctx, next) => {
+  const chain = chains[ctx.params.chain]
+  renderJson(ctx, chain && chain.chain)
+});
+
+router.get('/:chain/assetlist', (ctx, next) => {
+  const chain = chains[ctx.params.chain]
+  renderJson(ctx, chain && chain.assetlist)
 });
 
 subdomain.use('registry', router.routes());
