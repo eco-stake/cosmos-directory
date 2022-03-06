@@ -18,7 +18,6 @@ const ChainApis = (chainId, apis) => {
   }
 
   const bestUrls = (type) => {
-    console.log(currentUrls[type])
     const best = currentUrls[type][0]
     if(!best) return []
 

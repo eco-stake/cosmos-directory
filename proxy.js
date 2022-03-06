@@ -14,11 +14,12 @@ const intervals = {}
 const currentUrls = {}
 
 function updateChains(){
-  Object.keys(registry.chains).forEach(key => {
+  Object.keys(intervals).forEach(key => {
     clearInterval(intervals[key])
+    intervals.delete(key)
   })
   return registry.refresh().then(() => {
-    Object.keys(registry.chains).forEach(key => {
+    registry.chainNames().forEach(key => {
       updateApis(key)
       intervals[key] = setInterval(() => {
         updateApis(key)
@@ -43,7 +44,7 @@ function loadBalanceProxy(key, type, options, params, ctx){
         const chain = registry.getChain(key)
         const url = chain && chain.apis.bestUrl(type)
         if(!chain){
-          console.log(registry.chains, key)
+          console.log(registry.chainNames(), key)
           console.log('no chain')
           res.writeHead(404, {
             'Content-Type': 'text/plain'
@@ -96,7 +97,7 @@ subdomain.use('rest', proxy("/:chain", (req, res, ctx) => loadBalanceProxy(req.c
 subdomain.use('rpc', proxy("/:chain", (req, res, ctx) => loadBalanceProxy(req.chain, 'rpc', req, res, ctx)));
 
 router.get('/', (ctx, next) => {
-  renderJson(ctx, Object.keys(registry.chains))
+  renderJson(ctx, registry.chainNames())
 });
 
 router.get('/:chain', (ctx, next) => {

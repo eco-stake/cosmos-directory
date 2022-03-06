@@ -6,7 +6,7 @@ const Chain = require('./chain')
 
 const ChainRegistry = (repoDir) => {
   const repoUrl = 'https://github.com/cosmos/chain-registry'
-  var chains
+  let chains
 
   const setConfig = () => {
     return git.setConfig({
@@ -21,6 +21,10 @@ const ChainRegistry = (repoDir) => {
     return setConfig().then(() => {
       return git.pull({ fs, http, dir: repoDir, ref: 'master', singleBranch: true })
     })
+  }
+
+  const chainNames = () => {
+    return Object.keys(chains)
   }
 
   const getChain = (name) => {
@@ -49,7 +53,7 @@ const ChainRegistry = (repoDir) => {
       .filter((item) => item.isDirectory())
       .map((item) => item.name);
 
-    chains = directories.reduce((sum, dir) => {
+    const newChains = directories.reduce((sum, dir) => {
       if(dir.startsWith('.') || dir === 'testnets') return sum
 
       sum[dir] = fetchChain(dir)
@@ -57,16 +61,15 @@ const ChainRegistry = (repoDir) => {
       return sum
     }, {})
 
-    console.log(Object.keys(chains))
+    chains = newChains
+    console.log('Loaded chains', chainNames())
     return chains
   }
 
-  chains = loadChains()
-
   return {
     refresh,
-    chains,
-    getChain
+    getChain,
+    chainNames
   }
 }
 
