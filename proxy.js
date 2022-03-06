@@ -16,7 +16,7 @@ const currentUrls = {}
 function updateChains(){
   Object.keys(intervals).forEach(key => {
     clearInterval(intervals[key])
-    intervals.delete(key)
+    delete intervals[key]
   })
   return registry.refresh().then(() => {
     registry.chainNames().forEach(key => {
