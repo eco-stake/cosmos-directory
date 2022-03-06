@@ -11,6 +11,7 @@
   "dependencies": {
     "@koa/cors": "^3.1.0",
     "axios": "^0.26.0",
+    "isomorphic-git": "^1.13.1",
     "koa": "^2.13.4",
     "koa-proxies": "^0.12.2",
     "koa-router": "^10.1.1",
