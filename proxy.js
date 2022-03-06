@@ -22,7 +22,7 @@ function updateChains(){
       clearInterval(intervals[key])
       intervals[key] = setInterval(() => {
         updateApis(key)
-      }, 10_000)
+      }, 30_000)
     })
     return chains
   })
@@ -43,20 +43,20 @@ function loadBalanceProxy(key, type, options, params, ctx){
     target: 'https://cosmos.directory',
     events: {
       proxyReq: (proxyReq, req, res) => {
-        if(!chain){
-          console.log('no chain')
-          res.writeHead(404, {
-            'Content-Type': 'text/plain'
-          });
-          return res.end('Not found');
-        }
-        if(!url){
-          console.log('no url')
-          res.writeHead(502, {
-            'Content-Type': 'text/plain'
-          });
-          return res.end('No servers available');
-        }
+        // if(!chain){
+        //   console.log('no chain')
+        //   res.writeHead(404, {
+        //     'Content-Type': 'text/plain'
+        //   });
+        //   return res.end('Not found');
+        // }
+        // if(!url){
+        //   console.log('no url')
+        //   res.writeHead(502, {
+        //     'Content-Type': 'text/plain'
+        //   });
+        //   return res.end('No servers available');
+        // }
       },
     }
   }
@@ -86,6 +86,8 @@ const app = new Koa();
 const router = new Router();
 const subdomain = new Subdomain();
 
+app.use(cors());
+
 subdomain.use('rest', proxy("/:chain", (req, res, ctx) => loadBalanceProxy(req.chain, 'rest', req, res, ctx)));
 subdomain.use('rpc', proxy("/:chain", (req, res, ctx) => loadBalanceProxy(req.chain, 'rpc', req, res, ctx)));
 
@@ -104,8 +106,6 @@ router.get('/:chain/assetlist', (ctx, next) => {
 });
 
 subdomain.use('registry', router.routes());
-
-app.use(cors());
 
 app.use(subdomain.routes());
 

@@ -67,7 +67,7 @@ const ChainApis = (chainId, apis) => {
 
   const getBlockHeights = (urls, path, callback) => {
     return mapAsync(urls, (url) => {
-      return axios.get(url + '/' + path, {timeout: 4000})
+      return axios.get(url + '/' + path, {timeout: 5000})
         .then(res => res.data)
         .then(data => {
           return callback(url, data)
