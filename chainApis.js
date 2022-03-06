@@ -89,8 +89,8 @@ const ChainApis = (chainId, apis) => {
 
   return {
     bestUrl,
-    refreshUrls,
-    currentUrls
+    bestUrls,
+    refreshUrls
   }
 }
 

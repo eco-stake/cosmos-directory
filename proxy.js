@@ -33,7 +33,12 @@ function updateApis(key){
   chain.apis.refreshUrls()
 }
 
-function loadBalanceProxy(key, type, options, params, ctx){
+function loadBalanceProxy(key, type, path, options){
+  const chain = registry.getChain(key)
+  const url = chain && chain.apis.bestUrl(type)
+  options.res.locals = {
+    chain, url
+  }
   const regexp = new RegExp("\^\\/"+key, 'g');
   const response = {
     changeOrigin: true,
@@ -41,31 +46,23 @@ function loadBalanceProxy(key, type, options, params, ctx){
     target: 'https://cosmos.directory',
     events: {
       proxyReq: (proxyReq, req, res) => {
-        const chain = registry.getChain(key)
-        const url = chain && chain.apis.bestUrl(type)
+        const chain = res.locals.chain
+        const url = res.locals.url
         if(!chain){
-          console.log(registry.chainNames(), key)
-          console.log('no chain')
           res.writeHead(404, {
             'Content-Type': 'text/plain'
           });
           return res.end('Not found');
-        }
-        if(!url){
-          console.log(chain, chain.apis)
-          console.log('no url')
+        }else if(!url){
           res.writeHead(502, {
             'Content-Type': 'text/plain'
           });
           return res.end('No servers available');
         }
-        res.target = url
       },
     }
   }
 
-  const chain = registry.getChain(key)
-  const url = chain && chain.apis.bestUrl(type)
   if(url){
     response.target = url
     response.logs = true
@@ -93,20 +90,20 @@ const subdomain = new Subdomain();
 
 app.use(cors());
 
-subdomain.use('rest', proxy("/:chain", (req, res, ctx) => loadBalanceProxy(req.chain, 'rest', req, res, ctx)));
-subdomain.use('rpc', proxy("/:chain", (req, res, ctx) => loadBalanceProxy(req.chain, 'rpc', req, res, ctx)));
+subdomain.use('rest', proxy("/:chain", (path, options) => loadBalanceProxy(path.chain, 'rest', path, options)));
+subdomain.use('rpc', proxy("/:chain", (path, options) => loadBalanceProxy(path.chain, 'rpc', path, options)));
 
 router.get('/', (ctx, next) => {
   renderJson(ctx, registry.chainNames())
 });
 
 router.get('/:chain', (ctx, next) => {
-  const chain = registry.getChain(key)
+  const chain = registry.getChain(ctx.params.chain)
   renderJson(ctx, chain && chain.chain)
 });
 
 router.get('/:chain/assetlist', (ctx, next) => {
-  const chain = registry.getChain(key)
+  const chain = registry.getChain(ctx.params.chain)
   renderJson(ctx, chain && chain.assetlist)
 });
 
