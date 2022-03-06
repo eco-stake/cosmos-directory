@@ -30,7 +30,11 @@ const ChainApis = (chainId, apis) => {
 
       const prev = currentUrls[type]
       getOrderedUrls(type).then(urls => {
-        currentUrls[type] = urls
+        if(urls.length > 0){
+          currentUrls[type] = urls
+        }else if(currentUrls.length > 0){
+          console.log('Not removing last URLs', currentUrls[type])
+        }
         if(prev.length > urls.length){
           console.log('Removing', chainId, type, _.difference(prev, urls))
         }else if(prev.length < urls.length){
