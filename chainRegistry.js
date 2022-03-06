@@ -29,7 +29,7 @@ const ChainRegistry = (repoDir) => {
     const chainPath = path.join(repoDir, dir, 'chain.json')
     const assetListPath = path.join(repoDir, dir, 'assetlist.json')
     const chainData = fs.readFileSync(chainPath)
-    const assetListData = fs.existsSync(path) ? fs.readFileSync(assetListPath) : undefined
+    const assetListData = fs.existsSync(assetListPath) ? fs.readFileSync(assetListPath) : undefined
     const chainJson = JSON.parse(chainData)
     const assetListJson = assetListData && JSON.parse(assetListData)
 

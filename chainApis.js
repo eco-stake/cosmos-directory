@@ -10,17 +10,18 @@ const ChainApis = (chainId, apis) => {
   let currentUrlIndex = 1;
 
   const bestUrl = (type) => {
-    const cur = currentUrlIndex % currentUrls[type].length;
+    const urls = bestUrls(type)
+    const cur = currentUrlIndex % urls.length;
     currentUrlIndex++;
-    const best = currentUrls[type][cur]
-    return best && best.url
+    const best = urls[cur]
+    return best
   }
 
   const bestUrls = (type) => {
-    const best = urls[type][0]
+    const best = currentUrls[type][0]
     if(!best) return []
 
-    return urls[type].filter(el => el.height >= best.height - 5).map(el => el.url)
+    return currentUrls[type].filter(el => el.height >= best.height - 5).map(el => el.url)
   }
 
   const refreshUrls = () => {
