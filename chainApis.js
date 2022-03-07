@@ -1,36 +1,36 @@
 const axios = require("axios");
 const _ = require("lodash");
 
-const ChainApis = (chainId, apis) => {
+const ChainApis = (chainId, apis, previous) => {
   const urlTypes = ['rest', 'rpc']
-  var currentUrls = {
+  var current = previous || {
     rpc: [],
     rest: []
   }
-  let currentUrlIndex = 1;
+  let currentIndex = 1;
 
   const bestUrl = (type) => {
     const urls = bestUrls(type)
-    const cur = currentUrlIndex % urls.length;
-    currentUrlIndex++;
+    const cur = currentIndex % urls.length;
+    currentIndex++;
     const best = urls[cur]
     return best
   }
 
   const bestUrls = (type) => {
-    const best = currentUrls[type][0]
+    const best = current[type][0]
     if(!best) return []
 
-    return currentUrls[type].filter(el => el.height >= (best.height - 5)).map(el => el.url)
+    return current[type].filter(el => el.height >= (best.height - 5)).map(el => el.url)
   }
 
   const refreshUrls = () => {
     urlTypes.forEach(type => {
       if(!apis || !apis[type]) return
 
-      const prev = currentUrls[type]
+      const prev = current[type]
       getOrderedUrls(type).then(urls => {
-        currentUrls[type] = urls
+        current[type] = urls
         if(prev.length > urls.length){
           console.log('Removing', chainId, type, _.difference(prev, urls))
         }else if(prev.length < urls.length){
@@ -88,6 +88,7 @@ const ChainApis = (chainId, apis) => {
   }
 
   return {
+    current,
     bestUrl,
     bestUrls,
     refreshUrls

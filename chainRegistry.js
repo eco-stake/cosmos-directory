@@ -38,8 +38,9 @@ const ChainRegistry = (repoDir) => {
     const assetListData = fs.existsSync(assetListPath) ? fs.readFileSync(assetListPath) : undefined
     const chainJson = JSON.parse(chainData)
     const assetListJson = assetListData && JSON.parse(assetListData)
+    const existing = getChain(dir)
 
-    return Chain(chainJson, assetListJson)
+    return Chain(chainJson, assetListJson, existing)
   }
 
   const refresh = () => {
