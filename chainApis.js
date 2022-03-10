@@ -51,17 +51,15 @@ const ChainApis = (chainId, apis, previous) => {
   }
 
   const urlPath = (type) => {
-    return type === 'rest' ? 'blocks/latest' : 'status'
+    return type === 'rest' ? 'blocks/latest' : 'block'
   }
 
   const getBlockHeight = (type, url, data) => {
     let height
-    if(type === 'rpc' && data.result.node_info.network === chainId){
-      height = data.result.sync_info.latest_block_height
-    }else if(type === 'rest' && data.block.header.chain_id === chainId){
-      height = data.block.header.height
-    }
-    if(!height) return {url, height: 0}
+    if(type === 'rpc') data = data.result
+    if(data.block.header.chain_id !== chainId) return {url, height: 0}
+
+    height = data.block.header.height
     return {url, height: parseInt(height)}
   }
 
