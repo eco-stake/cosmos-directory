@@ -9,6 +9,13 @@ const ChainApis = (chainId, apis, previous) => {
   }
   let currentIndex = 1;
 
+  const summary = () => {
+    return urlTypes.reduce((sum, type) => {
+      sum[type] = bestUrls(type)
+      return sum
+    }, {})
+  }
+
   const bestUrl = (type) => {
     const urls = bestUrls(type)
     const cur = currentIndex % urls.length;
@@ -21,7 +28,7 @@ const ChainApis = (chainId, apis, previous) => {
     const best = current[type][0]
     if(!best) return []
 
-    return current[type].filter(el => el.height >= (best.height - 5)).map(el => el.url)
+    return current[type].filter(el => el.height >= (best.height - 3)).map(el => el.url)
   }
 
   const refreshUrls = () => {
@@ -89,7 +96,8 @@ const ChainApis = (chainId, apis, previous) => {
     current,
     bestUrl,
     bestUrls,
-    refreshUrls
+    refreshUrls,
+    summary
   }
 }
 
