@@ -95,10 +95,17 @@ subdomain.use('rest', proxy("/:chain", (path, options) => loadBalanceProxy(path.
 subdomain.use('rpc', proxy("/:chain", (path, options) => loadBalanceProxy(path.chain, 'rpc', path, options)));
 
 router.get('/', (ctx, next) => {
-  renderJson(ctx, registry.chainNames())
+  renderJson(ctx, registry.getChains().map(chain => {
+    return chain.summary()
+  }))
 });
 
 router.get('/:chain', (ctx, next) => {
+  const chain = registry.getChain(ctx.params.chain)
+  renderJson(ctx, chain && chain.summary())
+});
+
+router.get('/:chain/chain', (ctx, next) => {
   const chain = registry.getChain(ctx.params.chain)
   renderJson(ctx, chain && chain.chain)
 });

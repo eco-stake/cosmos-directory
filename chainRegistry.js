@@ -27,6 +27,10 @@ const ChainRegistry = (repoDir) => {
     return Object.keys(chains)
   }
 
+  const getChains = () => {
+    return Object.values(chains)
+  }
+
   const getChain = (name) => {
     return chains[name]
   }
@@ -69,6 +73,7 @@ const ChainRegistry = (repoDir) => {
 
   return {
     refresh,
+    getChains,
     getChain,
     chainNames
   }
