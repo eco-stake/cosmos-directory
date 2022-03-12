@@ -1,7 +1,7 @@
 const ChainApis = require('./chainApis')
 const ChainAsset = require('./chainAsset')
 
-const Chain = (chain, assetlist, previous) => {
+const Chain = (directory, chain, assetlist, previous) => {
   const { chain_name, status, network_type, pretty_name, chain_id } = chain
   const previousApis = previous && previous.apis.current
   const apis = ChainApis(chain.chain_id, chain.apis, previousApis)
@@ -11,6 +11,7 @@ const Chain = (chain, assetlist, previous) => {
   const summary = () => {
     return {
       chain_name,
+      directory,
       status,
       network_type,
       pretty_name,

@@ -44,7 +44,7 @@ const ChainRegistry = (repoDir) => {
     const assetListJson = assetListData && JSON.parse(assetListData)
     const existing = getChain(dir)
 
-    return Chain(chainJson, assetListJson, existing)
+    return Chain(dir, chainJson, assetListJson, existing)
   }
 
   const refresh = () => {
