@@ -52,7 +52,7 @@ const ChainApis = (chainId, apis, previous) => {
     return getBlockHeights(urls, urlPath(type), (url, data) => getBlockHeight(type, url, data))
       .then(results => {
         return results.filter(el => el.height > 0).sort((a, b) => {
-          b.height - a.height
+          return b.height - a.height
         })
       })
   }
