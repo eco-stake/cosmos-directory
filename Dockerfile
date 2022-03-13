@@ -7,7 +7,9 @@ COPY package*.json ./
 RUN npm install
 COPY . ./
 
-RUN git clone https://github.com/cosmos/chain-registry /usr/src/chain-registry
+ARG REGISTRY_URL=https://github.com/cosmos/chain-registry
+
+RUN git clone ${REGISTRY_URL} /usr/src/chain-registry
 
 EXPOSE 3000
 CMD node proxy.js

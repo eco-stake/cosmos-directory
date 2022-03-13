@@ -5,7 +5,6 @@ const path = require('path')
 const Chain = require('./chain')
 
 const ChainRegistry = (repoDir) => {
-  const repoUrl = 'https://github.com/cosmos/chain-registry'
   let chains = {}
 
   const setConfig = () => {

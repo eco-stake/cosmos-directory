@@ -13,7 +13,7 @@ jobs:
       - name: build
         run: |
           echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER }}" --password-stdin
-          docker build . --tag ghcr.io/${{ github.repository }}:${GITHUB_REF#refs/tags/}
+          docker build . --tag ghcr.io/${{ github.repository }}:${GITHUB_REF#refs/tags/} --build-arg REGISTRY_URL=https://github.com/eco-stake/chain-registry
           docker tag ghcr.io/${{ github.repository }}:${GITHUB_REF#refs/tags/} ghcr.io/${{ github.repository }}:latest
           docker push ghcr.io/${{ github.repository }}:${GITHUB_REF#refs/tags/}
           docker push ghcr.io/${{ github.repository }}:latest
