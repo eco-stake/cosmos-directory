@@ -8,9 +8,19 @@ const path = require('path')
 const ChainRegistry = require('./chainRegistry')
 
 const dir = path.join(process.cwd(), '../chain-registry')
-const registry = ChainRegistry(dir)
+const url = process.env.REGISTRY_URL
+const branch = process.env.REGISTRY_BRANCH
+const refreshSeconds = parseInt(process.env.REGISTRY_REFRESH || 1800)
 
-const REGISTRY_REFRESH_INTERVAL = 60_000 * 30
+console.log("Using config:", {
+  dir,
+  url,
+  branch,
+  refreshSeconds
+})
+
+const REGISTRY_REFRESH_INTERVAL = 1000 * refreshSeconds
+const registry = ChainRegistry(dir, branch)
 
 const intervals = {}
 
@@ -82,7 +92,9 @@ function renderJson(ctx, object){
 }
 
 updateChains()
-const registryInterval = setInterval(updateChains, REGISTRY_REFRESH_INTERVAL)
+if(REGISTRY_REFRESH_INTERVAL > 0){
+  setInterval(updateChains, REGISTRY_REFRESH_INTERVAL)
+}
 
 const port = process.env.PORT || 3000;
 const app = new Koa();

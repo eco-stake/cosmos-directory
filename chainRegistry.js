@@ -4,7 +4,7 @@ const fs = require('fs')
 const path = require('path')
 const Chain = require('./chain')
 
-const ChainRegistry = (repoDir) => {
+const ChainRegistry = (repoDir, branch) => {
   let chains = {}
 
   const setConfig = () => {
@@ -16,10 +16,10 @@ const ChainRegistry = (repoDir) => {
     })
   }
 
-  const updateRepo = () => {
-    return setConfig().then(() => {
-      return git.pull({ fs, http, dir: repoDir, ref: 'master', singleBranch: true })
-    })
+  const updateRepo = async () => {
+    await setConfig()
+    await git.fetch({ fs, http, dir: repoDir, ref: branch })
+    await git.checkout({ fs, dir: repoDir, ref: `origin/${branch}`, force: true })
   }
 
   const chainNames = () => {
@@ -46,10 +46,9 @@ const ChainRegistry = (repoDir) => {
     return Chain(dir, chainJson, assetListJson, existing)
   }
 
-  const refresh = () => {
-    return updateRepo().then(() => {
-      loadChains()
-    })
+  const refresh = async () => {
+    await updateRepo()
+    loadChains()
   }
 
   const loadChains = () => {

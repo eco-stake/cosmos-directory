@@ -6,6 +6,8 @@ services:
       context: .
       args:
         - REGISTRY_URL=https://github.com/eco-stake/chain-registry
+        - REGISTRY_BRANCH=cosmos-directory-dev
+        - REGISTRY_REFRESH=60
     ports:
       - '3000:3000'
     volumes:
