@@ -47,8 +47,12 @@ const ChainRegistry = (repoDir, branch) => {
   }
 
   const refresh = async () => {
-    await updateRepo()
-    loadChains()
+    try {
+      await updateRepo()
+      loadChains()
+    } catch (error) {
+      console.log('Failed to update repository', error)
+    }
   }
 
   const loadChains = () => {
