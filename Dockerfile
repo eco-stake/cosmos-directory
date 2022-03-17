@@ -5,6 +5,7 @@ RUN apk update && apk add git
 WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm install
+RUN npm install pm2 -g
 COPY . ./
 
 ARG REGISTRY_URL=https://github.com/cosmos/chain-registry
@@ -19,4 +20,5 @@ ARG REGISTRY_REFRESH=1800
 ENV REGISTRY_REFRESH=${REGISTRY_REFRESH}
 
 EXPOSE 3000
-CMD node proxy.js
+
+CMD ["pm2-runtime", "proxy.js"]
