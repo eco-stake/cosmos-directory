@@ -1,6 +1,9 @@
 const axios = require("axios");
 const _ = require("lodash")
 
+const ERROR_COOLDOWN=120
+const ALLOWED_DELAY=60
+
 const ChainApis = (chainId, apis, previous) => {
   const urlTypes = ['rest', 'rpc']
   const current = retainUrls()
@@ -27,7 +30,10 @@ const ChainApis = (chainId, apis, previous) => {
     if (!best)
       return [];
 
-    return urls.filter(el => el.height >= (best.height - 3)).map(el => el.url);
+    return urls
+      .filter(el => el.available)
+      .filter(el => el.height >= (best.height - 1))
+      .map(el => el.url);
   }
 
   function orderedUrls(type) {
@@ -40,7 +46,7 @@ const ChainApis = (chainId, apis, previous) => {
     return urlTypes.reduce((sum, type) => {
       if(!apis || !previous) return {...sum, [type]: {}}
       const removed = Object.values(_.omit(previous[type], apis[type].map(el => el.address)))
-      removed.map(url => { timeStamp('Removing', chainId, type, url, 'Removed from registry') })
+      removed.map(url => { timeStamp('Removing', chainId, type, url.url, 'Removed from registry') })
       sum[type] = _.pick(previous[type], apis[type].map(el => el.address))
       return sum;
     }, {});
@@ -53,16 +59,12 @@ const ChainApis = (chainId, apis, previous) => {
 
       const urls = apis[type].map(el => el.address);
       urls.forEach(url => {
-        axios.get(url + '/' + urlPath(type), { timeout: 10000 })
+        axios.get(url + '/' + urlPath(type), { timeout: 12000 })
           .then(res => res.data)
           .then(data => {
-            if (!current[type][url])
-              timeStamp('Adding', chainId, type, url);
-            current[type][url] = blockHeight(type, url, data);
+            current[type][url] = buildUrl(type, url, data);
           }).catch(error => {
-            if (current[type][url])
-              timeStamp('Removing', chainId, type, url, error.message);
-            delete current[type][url];
+            current[type][url] = errorUrl(type, url, error.message);
           });
       });
     });
@@ -72,15 +74,49 @@ const ChainApis = (chainId, apis, previous) => {
     return type === 'rest' ? 'blocks/latest' : 'block';
   }
 
-  function blockHeight(type, url, data) {
-    let height;
+  function buildUrl(type, url, data) {
     if (type === 'rpc')
       data = data.result;
-    if (data.block.header.chain_id !== chainId)
-      return { url, height: 0 };
+    const header = data.block.header
+    if (header.chain_id !== chainId)
+      return errorUrl(type, url, 'Unexpected chain ID: ' + header.chain_id);
 
-    height = data.block.header.height;
-    return { url, height: parseInt(height) };
+    const nodeTime = Date.parse(header.time)
+    const currentTime = Date.now()
+    if(nodeTime < (currentTime - 1000 * ALLOWED_DELAY))
+      return errorUrl(type, url, 'Unexpected block delay: ' + (currentTime - nodeTime) / 1000);
+
+    const { lastError, lastErrorAt, available } = current[type][url] || {}
+    const cooldownDate = (currentTime - 1000 * ERROR_COOLDOWN)
+    if(lastErrorAt && lastErrorAt > cooldownDate)
+      return errorUrl(type, url, 'Error cooldown: ' + (lastErrorAt - cooldownDate) / 1000, lastErrorAt);
+
+    if (!available)
+      timeStamp('Adding', chainId, type, url);
+
+    return { 
+      url, 
+      lastError,
+      lastErrorAt,
+      available: true, 
+      height: parseInt(header.height), 
+      time: nodeTime
+    };
+  }
+
+  function errorUrl(type, url, error, lastErrorAt){
+    const { available, height, time } = current[type][url] || {}
+    if (available) {
+      timeStamp('Removing', chainId, type, url, error);
+    }
+    return { 
+      url, 
+      lastError: error, 
+      lastErrorAt: lastErrorAt || Date.now(),
+      available: false,
+      height,
+      time
+    };
   }
 
   function timeStamp(...args) {
