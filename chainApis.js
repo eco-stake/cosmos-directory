@@ -1,8 +1,8 @@
 const axios = require("axios");
 const _ = require("lodash")
 
-const ERROR_COOLDOWN=120
-const ALLOWED_DELAY=60
+const ERROR_COOLDOWN = 5 * 60
+const ALLOWED_DELAY = 120
 
 const ChainApis = (chainId, apis, previous) => {
   const urlTypes = ['rest', 'rpc']
