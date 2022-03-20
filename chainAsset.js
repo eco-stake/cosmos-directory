@@ -29,4 +29,4 @@ const ChainAsset = (data) => {
   }
 }
 
-module.exports = ChainAsset
+export default ChainAsset

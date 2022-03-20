@@ -1,16 +1,17 @@
 /**
  * Dependencies
  */
- const { URL } = require('url')
- const HttpProxy = require('http-proxy')
- const pathMatch = require('path-match')
- const { v4: uuidv4 } = require('uuid')
+ import { URL } from 'url'
+ import pkg from 'http-proxy';
+ const { createProxyServer } = pkg;
+ import pathMatch from 'path-match'
+ import { v4 as uuidv4 } from 'uuid'
  
  /**
   * Constants
   */
  
- const proxy = HttpProxy.createProxyServer({
+ const proxy = createProxyServer({
     followRedirects: true
  })
  const route = pathMatch({
@@ -45,7 +46,7 @@
  /**
   * Koa Http Proxy Middleware
   */
- module.exports = (path, options) => {
+ export default (path, options) => {
    const middlewareId = uuidv4()
  
    return (ctx, next) => {
@@ -120,7 +121,8 @@
    }
  }
  
- module.exports.proxy = proxy
+ const _proxy = proxy
+export { _proxy as proxy }
  
  function logger (ctx, target) {
    console.log('%s - %s %s proxy to -> %s', new Date().toISOString(), ctx.req.method, ctx.req.oldPath, new URL(ctx.req.url, target))

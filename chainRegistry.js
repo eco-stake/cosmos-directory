@@ -1,14 +1,23 @@
-const git = require('isomorphic-git')
-const http = require('isomorphic-git/http/node')
-const fs = require('fs')
-const path = require('path')
-const Chain = require('./chain')
+import { setConfig as _setConfig, fetch, checkout } from 'isomorphic-git'
+import * as http from 'isomorphic-git/http/node/index.cjs'
+import fs from 'fs'
+import { join } from 'path'
+import Chain from './chain.js'
+import HealthMonitor from "./healthMonitor.js"
 
 const ChainRegistry = (repoDir, branch) => {
+  const monitor = HealthMonitor()
   let chains = {}
 
+  const status = () => {
+    return {
+      monitorQueue: monitor.size(),
+      chains: chainNames()
+    }
+  }
+
   const setConfig = () => {
-    return git.setConfig({
+    return _setConfig({
       fs,
       dir: repoDir,
       path: 'user.name',
@@ -18,8 +27,8 @@ const ChainRegistry = (repoDir, branch) => {
 
   const updateRepo = async () => {
     await setConfig()
-    await git.fetch({ fs, http, dir: repoDir, ref: branch })
-    await git.checkout({ fs, dir: repoDir, ref: `origin/${branch}`, force: true })
+    await fetch({ fs, http, dir: repoDir, ref: branch })
+    await checkout({ fs, dir: repoDir, ref: `origin/${branch}`, force: true })
   }
 
   const chainNames = () => {
@@ -35,20 +44,21 @@ const ChainRegistry = (repoDir, branch) => {
   }
 
   const fetchChain = (dir) => {
-    const chainPath = path.join(repoDir, dir, 'chain.json')
-    const assetListPath = path.join(repoDir, dir, 'assetlist.json')
+    const chainPath = join(repoDir, dir, 'chain.json')
+    const assetListPath = join(repoDir, dir, 'assetlist.json')
     const chainData = fs.readFileSync(chainPath)
     const assetListData = fs.existsSync(assetListPath) ? fs.readFileSync(assetListPath) : undefined
     const chainJson = JSON.parse(chainData)
     const assetListJson = assetListData && JSON.parse(assetListData)
     const existing = getChain(dir)
 
-    return Chain(dir, chainJson, assetListJson, existing)
+    return Chain(dir, chainJson, assetListJson, monitor, existing)
   }
 
   const refresh = async () => {
     try {
       await updateRepo()
+      monitor.clear()
       loadChains()
     } catch (error) {
       console.log('Failed to update repository', error)
@@ -74,6 +84,7 @@ const ChainRegistry = (repoDir, branch) => {
   }
 
   return {
+    status,
     refresh,
     getChains,
     getChain,
@@ -81,4 +92,4 @@ const ChainRegistry = (repoDir, branch) => {
   }
 }
 
-module.exports = ChainRegistry
+export default ChainRegistry
