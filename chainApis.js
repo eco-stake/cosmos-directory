@@ -33,7 +33,7 @@ const ChainApis = (chainId, apis, previous) => {
     return urls
       .filter(el => el.available)
       .filter(el => el.height >= (best.height - 1))
-      .map(el => el.url);
+      .map(el => el.url.replace(/\/$|$/, '/'));
   }
 
   function orderedUrls(type) {

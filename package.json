@@ -11,11 +11,13 @@
   "dependencies": {
     "@koa/cors": "^3.1.0",
     "axios": "^0.26.0",
+    "http-proxy": "^1.18.1",
     "isomorphic-git": "^1.13.1",
     "koa": "^2.13.4",
-    "koa-proxies": "^0.12.2",
     "koa-router": "^10.1.1",
     "koa-subdomain": "^3.0.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "path-match": "^1.2.4",
+    "uuid": "^8.3.2"
   }
 }
