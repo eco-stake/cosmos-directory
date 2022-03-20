@@ -1,10 +1,10 @@
-const axios = require("axios");
-const _ = require("lodash")
+import _ from "lodash"
 
-const ERROR_COOLDOWN = 5 * 60
-const ALLOWED_DELAY = 120
+const BEST_NODE_COUNT = 2
+const BEST_HEIGHT_DIFF = 1
+const BEST_RESPONSE_DIFF = 1
 
-const ChainApis = (chainId, apis, previous) => {
+const ChainApis = (chainId, apis, monitor, previous) => {
   const urlTypes = ['rest', 'rpc']
   const current = retainUrls()
   let currentIndex = 1;
@@ -16,12 +16,25 @@ const ChainApis = (chainId, apis, previous) => {
     }, {});
   }
 
-  function bestUrl(type) {
-    const urls = bestUrls(type);
+  function status() {
+    return urlTypes.reduce((sum, type) => {
+      const available = !!bestAddress(type)
+      sum.available = sum.available === false ? false : available
+      sum[type] = {
+        available: available,
+        best: bestUrls(type),
+        current: current[type]
+      }
+      return sum
+    }, {})
+  }
+
+  function bestAddress(type) {
+    const urls = bestUrls(type).slice(0, BEST_NODE_COUNT);
     const cur = currentIndex % urls.length;
     currentIndex++;
     const best = urls[cur];
-    return best;
+    return best && best.address.replace(/\/$|$/, '/');
   }
 
   function bestUrls(type) {
@@ -30,15 +43,16 @@ const ChainApis = (chainId, apis, previous) => {
     if (!best)
       return [];
 
-    return urls
-      .filter(el => el.available)
-      .filter(el => el.height >= (best.height - 1))
-      .map(el => el.url.replace(/\/$|$/, '/'));
+    return urls.filter(el => {
+      return el.blockHeight >= (best.blockHeight - BEST_HEIGHT_DIFF) && 
+        el.responseTime >= (best.responseTime - BEST_RESPONSE_DIFF * 1000)
+    }).map(el => el.url);
   }
 
   function orderedUrls(type) {
-    return Object.values(current[type]).filter(el => el.height > 0).sort((a, b) => {
-      return b.height - a.height;
+    const available = Object.values(current[type]).filter(el => el.available)
+    return available.sort((a, b) => {
+      return b.blockHeight - a.blockHeight || a.responseTime - b.responseTime
     });
   }
 
@@ -57,66 +71,15 @@ const ChainApis = (chainId, apis, previous) => {
       if (!apis || !apis[type])
         return;
 
-      const urls = apis[type].map(el => el.address);
+      const urls = apis[type];
       urls.forEach(url => {
-        axios.get(url + '/' + urlPath(type), { timeout: 12000 })
-          .then(res => res.data)
-          .then(data => {
-            current[type][url] = buildUrl(type, url, data);
-          }).catch(error => {
-            current[type][url] = errorUrl(type, url, error.message);
-          });
+        const currentUrl = current[type][url.address] || {}
+        monitor.checkUrl(url, type, chainId, currentUrl)
+          .then(urlData => {
+            current[type][url.address] = urlData
+          })
       });
     });
-  }
-
-  function urlPath(type) {
-    return type === 'rest' ? 'blocks/latest' : 'block';
-  }
-
-  function buildUrl(type, url, data) {
-    if (type === 'rpc')
-      data = data.result;
-    const header = data.block.header
-    if (header.chain_id !== chainId)
-      return errorUrl(type, url, 'Unexpected chain ID: ' + header.chain_id);
-
-    const nodeTime = Date.parse(header.time)
-    const currentTime = Date.now()
-    if(nodeTime < (currentTime - 1000 * ALLOWED_DELAY))
-      return errorUrl(type, url, 'Unexpected block delay: ' + (currentTime - nodeTime) / 1000);
-
-    const { lastError, lastErrorAt, available } = current[type][url] || {}
-    const cooldownDate = (currentTime - 1000 * ERROR_COOLDOWN)
-    if(lastErrorAt && lastErrorAt > cooldownDate)
-      return errorUrl(type, url, 'Error cooldown: ' + (lastErrorAt - cooldownDate) / 1000, lastErrorAt);
-
-    if (!available)
-      timeStamp('Adding', chainId, type, url);
-
-    return { 
-      url, 
-      lastError,
-      lastErrorAt,
-      available: true, 
-      height: parseInt(header.height), 
-      time: nodeTime
-    };
-  }
-
-  function errorUrl(type, url, error, lastErrorAt){
-    const { available, height, time } = current[type][url] || {}
-    if (available) {
-      timeStamp('Removing', chainId, type, url, error);
-    }
-    return { 
-      url, 
-      lastError: error, 
-      lastErrorAt: lastErrorAt || Date.now(),
-      available: false,
-      height,
-      time
-    };
   }
 
   function timeStamp(...args) {
@@ -125,11 +88,12 @@ const ChainApis = (chainId, apis, previous) => {
 
   return {
     current,
-    bestUrl,
+    bestAddress,
     bestUrls,
     refreshUrls,
-    summary
+    summary,
+    status
   }
 }
 
-module.exports = ChainApis
+export default ChainApis

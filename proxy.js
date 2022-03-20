@@ -1,13 +1,13 @@
-const Koa = require("koa");
-const Subdomain = require('koa-subdomain');
-const Router = require('koa-router');
-const cors = require("@koa/cors");
-const _ = require("lodash");
-const path = require('path')
-const proxy = require("./proxyServer");
-const ChainRegistry = require('./chainRegistry')
+import Koa from "koa";
+import Subdomain from 'koa-subdomain';
+import Router from 'koa-router';
+import cors from "@koa/cors";
+import _ from "lodash";
+import { join } from 'path';
+import proxy from "./proxyServer.js";
+import ChainRegistry from './chainRegistry.js';
 
-const dir = path.join(process.cwd(), '../chain-registry')
+const dir = join(process.cwd(), '../chain-registry')
 const url = process.env.REGISTRY_URL
 const branch = process.env.REGISTRY_BRANCH
 const refreshSeconds = parseInt(process.env.REGISTRY_REFRESH || 1800)
@@ -46,7 +46,7 @@ function updateApis(key){
 
 function loadBalanceProxy(key, type, path, options){
   const chain = registry.getChain(key)
-  const url = chain && chain.apis.bestUrl(type)
+  const url = chain && chain.apis.bestAddress(type)
   options.res.locals = {
     chain, url
   }
@@ -76,7 +76,7 @@ function loadBalanceProxy(key, type, path, options){
 
   if(url){
     response.target = url
-    response.logs = true
+    // response.logs = true
   }
 
   return response
@@ -130,6 +130,19 @@ router.get('/:chain/assetlist', (ctx, next) => {
 subdomain.use('registry', router.routes());
 
 app.use(subdomain.routes());
+
+const appRouter = new Router();
+
+appRouter.get('/status', (ctx, next) => {
+  renderJson(ctx, registry.status())
+});
+
+appRouter.get('/:chain/status', (ctx, next) => {
+  const chain = registry.getChain(ctx.params.chain)
+  renderJson(ctx, chain && chain.status())
+});
+
+app.use(appRouter.routes());
 
 app.listen(port);
 console.log(`listening on port ${port}`);
