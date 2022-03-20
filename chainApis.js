@@ -18,7 +18,10 @@ const ChainApis = (chainId, apis, monitor, previous) => {
 
   function status() {
     return urlTypes.reduce((sum, type) => {
+      const available = !!bestAddress(type)
+      sum.available = sum.available === false ? false : available
       sum[type] = {
+        available: available,
         best: bestUrls(type),
         current: current[type]
       }
