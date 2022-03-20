@@ -2,9 +2,9 @@ const Koa = require("koa");
 const Subdomain = require('koa-subdomain');
 const Router = require('koa-router');
 const cors = require("@koa/cors");
-const proxy = require("koa-proxies");
 const _ = require("lodash");
 const path = require('path')
+const proxy = require("./proxyServer");
 const ChainRegistry = require('./chainRegistry')
 
 const dir = path.join(process.cwd(), '../chain-registry')
