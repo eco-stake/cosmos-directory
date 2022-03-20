@@ -1,8 +1,12 @@
 const axios = require("axios");
 const _ = require("lodash")
 
-const ERROR_COOLDOWN = 5 * 60
-const ALLOWED_DELAY = 120
+const ERROR_COOLDOWN = 3 * 60
+const ALLOWED_DELAY = 3 * 60
+const ALLOWED_ERRORS = 1
+const BEST_NODE_COUNT = 2
+const BEST_HEIGHT_DIFF = 1
+const BEST_RESPONSE_DIFF = 3
 
 const ChainApis = (chainId, apis, previous) => {
   const urlTypes = ['rest', 'rpc']
@@ -16,12 +20,12 @@ const ChainApis = (chainId, apis, previous) => {
     }, {});
   }
 
-  function bestUrl(type) {
-    const urls = bestUrls(type);
+  function bestAddress(type) {
+    const urls = bestUrls(type).slice(0, BEST_NODE_COUNT);
     const cur = currentIndex % urls.length;
     currentIndex++;
     const best = urls[cur];
-    return best;
+    return best && best.address.replace(/\/$|$/, '/');
   }
 
   function bestUrls(type) {
@@ -30,15 +34,16 @@ const ChainApis = (chainId, apis, previous) => {
     if (!best)
       return [];
 
-    return urls
-      .filter(el => el.available)
-      .filter(el => el.height >= (best.height - 1))
-      .map(el => el.url.replace(/\/$|$/, '/'));
+    return urls.filter(el => {
+      return el.blockHeight >= (best.blockHeight - BEST_HEIGHT_DIFF) && 
+        el.responseTime >= (best.responseTime - BEST_RESPONSE_DIFF * 1000)
+    }).map(el => el.url);
   }
 
   function orderedUrls(type) {
-    return Object.values(current[type]).filter(el => el.height > 0).sort((a, b) => {
-      return b.height - a.height;
+    const available = Object.values(current[type]).filter(el => el.available)
+    return available.sort((a, b) => {
+      return b.blockHeight - a.blockHeight || a.responseTime - b.responseTime
     });
   }
 
@@ -57,14 +62,17 @@ const ChainApis = (chainId, apis, previous) => {
       if (!apis || !apis[type])
         return;
 
-      const urls = apis[type].map(el => el.address);
+      const urls = apis[type];
       urls.forEach(url => {
-        axios.get(url + '/' + urlPath(type), { timeout: 12000 })
+        const start = Date.now();
+        axios.get(url.address + '/' + urlPath(type), { timeout: 12000 })
           .then(res => res.data)
           .then(data => {
-            current[type][url] = buildUrl(type, url, data);
+            const responseTime = Date.now() - start
+            current[type][url.address] = buildUrl(type, url, data, responseTime);
           }).catch(error => {
-            current[type][url] = errorUrl(type, url, error.message);
+            const responseTime = Date.now() - start
+            current[type][url.address] = buildUrl(type, url, undefined, responseTime, error.message);
           });
       });
     });
@@ -74,49 +82,64 @@ const ChainApis = (chainId, apis, previous) => {
     return type === 'rest' ? 'blocks/latest' : 'block';
   }
 
-  function buildUrl(type, url, data) {
-    if (type === 'rpc')
-      data = data.result;
-    const header = data.block.header
-    if (header.chain_id !== chainId)
-      return errorUrl(type, url, 'Unexpected chain ID: ' + header.chain_id);
+  function buildUrl(type, url, data, responseTime, error) {
+    let blockTime, blockHeight
+    if(!error){
+      ({ error, blockTime, blockHeight } = checkHeader(type, data))
+    }
 
-    const nodeTime = Date.parse(header.time)
-    const currentTime = Date.now()
-    if(nodeTime < (currentTime - 1000 * ALLOWED_DELAY))
-      return errorUrl(type, url, 'Unexpected block delay: ' + (currentTime - nodeTime) / 1000);
+    const currentUrl = current[type][url.address] || {}
+    let { lastError, lastErrorAt, available } = currentUrl
+    let errorCount = currentUrl.errorCount || 0
+    if(error){
+      if (available) errorCount++
+      lastError = error
+      lastErrorAt = Date.now()
+    }else if(errorCount > ALLOWED_ERRORS){
+      const currentTime = Date.now()
+      const cooldownDate = (currentTime - 1000 * ERROR_COOLDOWN)
+      if(lastErrorAt && lastErrorAt > cooldownDate){
+        error = 'Error cooldown: ' + (lastErrorAt - cooldownDate) / 1000
+      }
+    }
 
-    const { lastError, lastErrorAt, available } = current[type][url] || {}
-    const cooldownDate = (currentTime - 1000 * ERROR_COOLDOWN)
-    if(lastErrorAt && lastErrorAt > cooldownDate)
-      return errorUrl(type, url, 'Error cooldown: ' + (lastErrorAt - cooldownDate) / 1000, lastErrorAt);
-
-    if (!available)
-      timeStamp('Adding', chainId, type, url);
-
+    if(!error) errorCount = 0
+    const nowAvailable = errorCount <= ALLOWED_ERRORS && (!error || currentUrl.available)
+    if(available && !nowAvailable){
+      timeStamp('Removing', chainId, type, url.address, error);
+    }else if(!available && nowAvailable){
+      timeStamp('Adding', chainId, type, url.address);
+    }
+    
     return { 
       url, 
       lastError,
       lastErrorAt,
-      available: true, 
-      height: parseInt(header.height), 
-      time: nodeTime
+      errorCount,
+      available: nowAvailable, 
+      blockHeight: blockHeight, 
+      blockTime: blockTime,
+      responseTime
     };
   }
 
-  function errorUrl(type, url, error, lastErrorAt){
-    const { available, height, time } = current[type][url] || {}
-    if (available) {
-      timeStamp('Removing', chainId, type, url, error);
-    }
-    return { 
-      url, 
-      lastError: error, 
-      lastErrorAt: lastErrorAt || Date.now(),
-      available: false,
-      height,
-      time
-    };
+  function checkHeader(type, data){
+    let error, blockTime
+    if (data && type === 'rpc')
+      data = data.result;
+
+    const header = data.block.header
+    if (header.chain_id !== chainId)
+      error = 'Unexpected chain ID: ' + header.chain_id
+
+    blockTime = Date.parse(header.time)
+    const currentTime = Date.now()
+    if(!error && blockTime < (currentTime - 1000 * ALLOWED_DELAY))
+      error = 'Unexpected block delay: ' + (currentTime - blockTime) / 1000
+
+    let blockHeight = parseInt(header.height)
+
+    return {blockTime, blockHeight, error: error}
   }
 
   function timeStamp(...args) {
@@ -125,7 +148,7 @@ const ChainApis = (chainId, apis, previous) => {
 
   return {
     current,
-    bestUrl,
+    bestAddress,
     bestUrls,
     refreshUrls,
     summary

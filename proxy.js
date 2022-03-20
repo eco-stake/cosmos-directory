@@ -46,7 +46,7 @@ function updateApis(key){
 
 function loadBalanceProxy(key, type, path, options){
   const chain = registry.getChain(key)
-  const url = chain && chain.apis.bestUrl(type)
+  const url = chain && chain.apis.bestAddress(type)
   options.res.locals = {
     chain, url
   }
