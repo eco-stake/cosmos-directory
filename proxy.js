@@ -34,7 +34,7 @@ function updateChains(){
       updateApis(key)
       intervals[key] = setInterval(() => {
         updateApis(key)
-      }, 15_000)
+      }, 30_000)
     })
   })
 }
