@@ -11,7 +11,7 @@ const dir = join(process.cwd(), '../chain-registry')
 const url = process.env.REGISTRY_URL
 const branch = process.env.REGISTRY_BRANCH
 const refreshSeconds = parseInt(process.env.REGISTRY_REFRESH || 1800)
-const healthSeconds = parseInt(process.env.HEALTH_REFRESH || 30)
+const healthSeconds = parseInt(process.env.HEALTH_REFRESH || 15)
 
 console.log("Using config:", {
   dir,
