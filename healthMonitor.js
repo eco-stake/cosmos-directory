@@ -1,5 +1,5 @@
 import PQueue from 'p-queue';
-import axios from 'axios';
+import got from 'got';
 import _ from 'lodash'
 
 const ERROR_COOLDOWN = 3 * 60
@@ -13,12 +13,16 @@ class MonitorQueue {
 
 	enqueue(run, options) {
     if(options.address){
-      _.remove(this._queue, el => el.address === options.address);
       const runData = {
         address: options.address,
         run: run
       }
-      this._queue.push(runData);
+      var index = _.findIndex(this._queue, ['address', options.address]);
+      if(index >= 0){
+        this._queue[index] = runData;
+      }else{
+        this._queue.push(runData);
+      }
     }
 	}
 
@@ -47,17 +51,19 @@ const HealthMonitor = () => {
   }
 
   function checkUrl(url, type, chainId, currentUrl){
-    const request = () => {
-      const start = Date.now();
-      return axios.get(url.address + '/' + urlPath(type), { timeout: 5000 })
-        .then(res => res.data)
-        .then(data => {
-          const responseTime = Date.now() - start
-          return buildUrl(type, chainId, url, currentUrl, data, responseTime);
-        }).catch(error => {
-          const responseTime = Date.now() - start
-          return buildUrl(type, chainId, url, currentUrl, undefined, responseTime, error.message);
+    const request = async () => {
+      try {
+        const response = await got.get(url.address + '/' + urlPath(type), { 
+          timeout: { request: 5000 },
+          retry: { limit: 1 }
         });
+        const { timings, body } = response
+        const data = JSON.parse(body)
+        return buildUrl(type, chainId, url, currentUrl, data, timings.phases.total);
+      } catch (error) {
+        const { timings, message } = error
+        return buildUrl(type, chainId, url, currentUrl, undefined, timings.phases.total, message);
+      }
     }
     return queue.add(request, {address: url.address})
   }

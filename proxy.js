@@ -11,6 +11,7 @@ const dir = join(process.cwd(), '../chain-registry')
 const url = process.env.REGISTRY_URL
 const branch = process.env.REGISTRY_BRANCH
 const refreshSeconds = parseInt(process.env.REGISTRY_REFRESH || 1800)
+const healthSeconds = parseInt(process.env.HEALTH_REFRESH || 30)
 
 console.log("Using config:", {
   dir,
@@ -20,6 +21,7 @@ console.log("Using config:", {
 })
 
 const REGISTRY_REFRESH_INTERVAL = 1000 * refreshSeconds
+const HEALTH_REFRESH_INTERVAL = 1000 * healthSeconds
 const registry = ChainRegistry(dir, branch)
 
 const intervals = {}
@@ -34,7 +36,7 @@ function updateChains(){
       updateApis(key)
       intervals[key] = setInterval(() => {
         updateApis(key)
-      }, 30_000)
+      }, HEALTH_REFRESH_INTERVAL)
     })
   })
 }
