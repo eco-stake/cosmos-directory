@@ -49,7 +49,7 @@ const HealthMonitor = () => {
   function checkUrl(url, type, chainId, currentUrl){
     const request = () => {
       const start = Date.now();
-      return axios.get(url.address + '/' + urlPath(type), { timeout: 10000 })
+      return axios.get(url.address + '/' + urlPath(type), { timeout: 5000 })
         .then(res => res.data)
         .then(data => {
           const responseTime = Date.now() - start
