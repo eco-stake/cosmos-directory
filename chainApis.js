@@ -2,13 +2,26 @@ import _ from "lodash"
 import { timeStamp } from './utils.js';
 
 const BEST_NODE_COUNT = 2
-const BEST_HEIGHT_DIFF = 1
+const BEST_HEIGHT_DIFF = 2
 const BEST_RESPONSE_DIFF = 1
 
-const ChainApis = (chainId, apis, monitor, previous) => {
+const ChainApis = (chainId, apis, monitor) => {
   const urlTypes = ['rest', 'rpc']
-  const current = retainUrls()
+  let current = {}
   let currentIndex = 1;
+
+  update(apis)
+
+  function update(newApis) {
+    current = urlTypes.reduce((sum, type) => {
+      const newUrls = newApis[type] || []
+      const removed = Object.values(_.omit(current[type], newUrls.map(el => el.address)))
+      removed.map(url => { timeStamp('Removed upstream', chainId, type, url.url.address) })
+      sum[type] = _.pick(current[type], newUrls.map(el => el.address))
+      return sum;
+    }, {});
+    apis = newApis
+  }
 
   function summary() {
     return urlTypes.reduce((sum, type) => {
@@ -57,17 +70,6 @@ const ChainApis = (chainId, apis, monitor, previous) => {
     });
   }
 
-  function retainUrls() {
-    return urlTypes.reduce((sum, type) => {
-      if(!apis || !previous) return {...sum, [type]: {}}
-      const newUrls = apis[type] || []
-      const removed = Object.values(_.omit(previous[type], newUrls.map(el => el.address)))
-      removed.map(url => { timeStamp('Removing', chainId, type, url.url, 'Removed from registry') })
-      sum[type] = _.pick(previous[type], newUrls.map(el => el.address))
-      return sum;
-    }, {});
-  }
-
   async function refreshUrls() {
     await Promise.all(urlTypes.map(async type => {
       const urls = apis[type] || [];
@@ -87,6 +89,7 @@ const ChainApis = (chainId, apis, monitor, previous) => {
     bestUrls,
     refreshUrls,
     summary,
+    update,
     status
   }
 }

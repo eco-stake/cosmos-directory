@@ -25,16 +25,8 @@ const REGISTRY_REFRESH_INTERVAL = 1000 * refreshSeconds
 const HEALTH_REFRESH_INTERVAL = 1000 * healthSeconds
 const registry = ChainRegistry(dir, branch)
 
-let healthInterval
-
-async function updateChains(){
-  if(healthInterval) clearTimeout(healthInterval)
-  await registry.refresh()
-  queueHealthCheck()
-}
-
 async function queueHealthCheck(){
-  healthInterval = setTimeout(() => {
+  setTimeout(() => {
     registry.refreshApis().then(() => {
       queueHealthCheck()
     })
@@ -88,10 +80,13 @@ function renderJson(ctx, object){
   }
 }
 
-updateChains().then(() => {
-  if (REGISTRY_REFRESH_INTERVAL > 0) {
-    setInterval(updateChains, REGISTRY_REFRESH_INTERVAL)
-  }
+registry.refresh().then(() => {
+  registry.refreshApis().then(() => {
+    if (REGISTRY_REFRESH_INTERVAL > 0) {
+      setInterval(() => registry.refresh(), REGISTRY_REFRESH_INTERVAL)
+      queueHealthCheck()
+    }
+  })
 })
 
 const port = process.env.PORT || 3000;

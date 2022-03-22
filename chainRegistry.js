@@ -44,7 +44,7 @@ const ChainRegistry = (repoDir, branch) => {
     return chains[name]
   }
 
-  const fetchChain = (dir) => {
+  const buildChain = (dir) => {
     const chainPath = join(repoDir, dir, 'chain.json')
     const assetListPath = join(repoDir, dir, 'assetlist.json')
     const chainData = fs.readFileSync(chainPath)
@@ -52,18 +52,20 @@ const ChainRegistry = (repoDir, branch) => {
     const chainJson = JSON.parse(chainData)
     const assetListJson = assetListData && JSON.parse(assetListData)
     const existing = getChain(dir)
-
-    return Chain(dir, chainJson, assetListJson, monitor, existing)
+    if(existing){
+      existing.update(chainJson, assetListJson)
+      return existing
+    }else{
+      return Chain(dir, chainJson, assetListJson, monitor)
+    }
   }
 
   const refresh = async () => {
     try {
       timeStamp('Loading chains');
-      monitor.clear()
       await updateRepo()
       loadChains()
       timeStamp('Loaded chains', chainNames());
-      await refreshApis()
     } catch (error) {
       timeStamp('Failed to update repository', error);
     }
@@ -82,15 +84,13 @@ const ChainRegistry = (repoDir, branch) => {
       .filter((item) => item.isDirectory())
       .map((item) => item.name);
 
-    const newChains = directories.reduce((sum, dir) => {
+    chains = directories.reduce((sum, dir) => {
       if(dir.startsWith('.') || dir === 'testnets') return sum
 
-      sum[dir] = fetchChain(dir)
+      sum[dir] = buildChain(dir)
 
       return sum
     }, {})
-
-    chains = newChains
   }
 
   return {

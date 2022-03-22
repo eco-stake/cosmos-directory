@@ -1,14 +1,24 @@
 import ChainApis from './chainApis.js'
 import ChainAsset from './chainAsset.js'
 
-const Chain = (directory, chain, assetlist, monitor, previous) => {
-  const { chain_name, network_type, pretty_name, chain_id } = chain
-  const previousApis = previous && previous.apis.current
-  const apis = ChainApis(chain.chain_id, chain.apis || {}, monitor, previousApis)
-  const assets = assetlist && assetlist.assets.map(el => ChainAsset(el))
-  const baseAsset = assets && assets[0]
+const Chain = (directory, chain, assetlist, monitor) => {
+  let apis, assets
 
-  const summary = () => {
+  update(chain, assetlist)
+
+  function update(newChain, newAssetlist) {
+    chain = newChain
+    if(apis){
+      apis.update(newChain.apis || {})
+    }else{
+      apis = ChainApis(chain.chain_id, chain.apis || {}, monitor)
+    }
+    assets = newAssetlist && newAssetlist.assets.map(el => ChainAsset(el))
+  }
+
+  function summary() {
+    const { chain_name, network_type, pretty_name, chain_id } = chain
+    const baseAsset = assets && assets[0]
     return {
       chain_name,
       directory,
@@ -23,7 +33,7 @@ const Chain = (directory, chain, assetlist, monitor, previous) => {
     }
   }
 
-  const status = () => {
+  function status() {
     return apis.status()
   }
 
@@ -33,7 +43,8 @@ const Chain = (directory, chain, assetlist, monitor, previous) => {
     assetlist,
     apis,
     summary,
-    status
+    status,
+    update
   }
 }
 

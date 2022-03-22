@@ -4,9 +4,9 @@ import _ from 'lodash'
 
 import { timeStamp } from './utils.js';
 
-const ERROR_COOLDOWN = 3 * 60
 const ALLOWED_DELAY = 5 * 60
-const ALLOWED_ERRORS = 2
+const ALLOWED_ERRORS = 1
+const ERROR_COOLDOWN = 3 * 60
 
 class MonitorQueue {
 	constructor() {
@@ -36,7 +36,7 @@ class MonitorQueue {
 }
 
 const HealthMonitor = () => {
-  const queue = new PQueue({ concurrency: 20, queueClass: MonitorQueue });
+  const queue = new PQueue({ concurrency: 50, queueClass: MonitorQueue });
 
   function size(){
     return queue.size
@@ -81,7 +81,7 @@ const HealthMonitor = () => {
     let { lastError, lastErrorAt, available } = currentUrl
     let errorCount = currentUrl.errorCount || 0
     if(error){
-      if (available) errorCount++
+      errorCount++
       lastError = error
       lastErrorAt = Date.now()
     }else if(errorCount > 0){
@@ -92,7 +92,10 @@ const HealthMonitor = () => {
       }
     }
 
-    const nowAvailable = errorCount <= ALLOWED_ERRORS && (!error || !!currentUrl.available)
+    let nowAvailable = false
+    if(errorCount <= ALLOWED_ERRORS){
+      nowAvailable = !error || !!currentUrl.available
+    }
     if(available && !nowAvailable){
       timeStamp('Removing', chainId, type, url.address, error);
     }else if(!available && nowAvailable){
