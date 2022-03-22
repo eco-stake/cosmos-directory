@@ -1,4 +1,5 @@
 import _ from "lodash"
+import { timeStamp } from './utils.js';
 
 const BEST_NODE_COUNT = 2
 const BEST_HEIGHT_DIFF = 1
@@ -59,31 +60,25 @@ const ChainApis = (chainId, apis, monitor, previous) => {
   function retainUrls() {
     return urlTypes.reduce((sum, type) => {
       if(!apis || !previous) return {...sum, [type]: {}}
-      const removed = Object.values(_.omit(previous[type], apis[type].map(el => el.address)))
+      const newUrls = apis[type] || []
+      const removed = Object.values(_.omit(previous[type], newUrls.map(el => el.address)))
       removed.map(url => { timeStamp('Removing', chainId, type, url.url, 'Removed from registry') })
-      sum[type] = _.pick(previous[type], apis[type].map(el => el.address))
+      sum[type] = _.pick(previous[type], newUrls.map(el => el.address))
       return sum;
     }, {});
   }
 
-  function refreshUrls() {
-    urlTypes.forEach(type => {
-      if (!apis || !apis[type])
-        return;
+  async function refreshUrls() {
+    await Promise.all(urlTypes.map(async type => {
+      const urls = apis[type] || [];
+      await Promise.all(urls.map(async url => {
+        if(monitor.pending(url.address)) return
 
-      const urls = apis[type];
-      urls.forEach(url => {
         const currentUrl = current[type][url.address] || {}
-        monitor.checkUrl(url, type, chainId, currentUrl)
-          .then(urlData => {
-            current[type][url.address] = urlData
-          })
-      });
-    });
-  }
-
-  function timeStamp(...args) {
-    console.log('[' + new Date().toISOString().substring(11, 23) + '] -', ...args);
+        const urlData = await monitor.checkUrl(url, type, chainId, currentUrl)
+        current[type][url.address] = urlData
+      }));
+    }));
   }
 
   return {

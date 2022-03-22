@@ -2,6 +2,8 @@ import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
 
+import { timeStamp } from './utils.js';
+
 const ERROR_COOLDOWN = 3 * 60
 const ALLOWED_DELAY = 5 * 60
 const ALLOWED_ERRORS = 2
@@ -12,22 +14,16 @@ class MonitorQueue {
 	}
 
 	enqueue(run, options) {
-    if(options.address){
-      const runData = {
-        address: options.address,
-        run: run
-      }
-      var index = _.findIndex(this._queue, ['address', options.address]);
-      if(index >= 0){
-        this._queue[index] = runData;
-      }else{
-        this._queue.push(runData);
-      }
+    const runData = {
+      address: options.address,
+      run: run
     }
+    return this._queue.push(runData);
 	}
 
 	dequeue() {
-		return this._queue.shift()?.run;
+		const job = this._queue.shift()
+    return job.run;
 	}
 
 	get size() {
@@ -35,12 +31,12 @@ class MonitorQueue {
 	}
 
 	filter(options) {
-		return this._queue;
+		return this._queue.filter(el => el.address === options.address);
 	}
 }
 
 const HealthMonitor = () => {
-  const queue = new PQueue({ concurrency: 25, queueClass: MonitorQueue });
+  const queue = new PQueue({ concurrency: 20, queueClass: MonitorQueue });
 
   function size(){
     return queue.size
@@ -48,6 +44,10 @@ const HealthMonitor = () => {
 
   function clear(){
     queue.clear()
+  }
+
+  function pending(address){
+    return queue.sizeBy({address}) > 0
   }
 
   function checkUrl(url, type, chainId, currentUrl){
@@ -132,12 +132,9 @@ const HealthMonitor = () => {
     return {blockTime, blockHeight, error: error}
   }
 
-  function timeStamp(...args) {
-    console.log('[' + new Date().toISOString().substring(11, 23) + '] -', ...args);
-  }
-
   return {
     checkUrl,
+    pending,
     clear,
     size
   }

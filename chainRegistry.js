@@ -2,6 +2,7 @@ import { setConfig as _setConfig, fetch, checkout } from 'isomorphic-git'
 import * as http from 'isomorphic-git/http/node/index.cjs'
 import fs from 'fs'
 import { join } from 'path'
+import { timeStamp } from './utils.js';
 import Chain from './chain.js'
 import HealthMonitor from "./healthMonitor.js"
 
@@ -57,12 +58,23 @@ const ChainRegistry = (repoDir, branch) => {
 
   const refresh = async () => {
     try {
-      await updateRepo()
+      timeStamp('Loading chains');
       monitor.clear()
+      await updateRepo()
       loadChains()
+      timeStamp('Loaded chains', chainNames());
+      await refreshApis()
     } catch (error) {
-      console.log('Failed to update repository', error)
+      timeStamp('Failed to update repository', error);
     }
+  }
+
+  const refreshApis = async () => {
+    timeStamp('Refreshing APIs');
+    await Promise.all(getChains().map(async chain => {
+      await chain.apis.refreshUrls()
+    }))
+    timeStamp('Refreshed APIs');
   }
 
   const loadChains = () => {
@@ -79,13 +91,12 @@ const ChainRegistry = (repoDir, branch) => {
     }, {})
 
     chains = newChains
-    console.log('Loaded chains', chainNames())
-    return chains
   }
 
   return {
     status,
     refresh,
+    refreshApis,
     getChains,
     getChain,
     chainNames
