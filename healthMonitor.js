@@ -5,8 +5,8 @@ import _ from 'lodash'
 import { timeStamp } from './utils.js';
 
 const ALLOWED_DELAY = 5 * 60
-const ALLOWED_ERRORS = 1
-const ERROR_COOLDOWN = 3 * 60
+const ALLOWED_ERRORS = 2
+const ERROR_COOLDOWN = 5 * 60
 
 class MonitorQueue {
 	constructor() {
