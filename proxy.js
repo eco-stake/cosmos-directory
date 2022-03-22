@@ -11,7 +11,7 @@ const dir = join(process.cwd(), '../chain-registry')
 const url = process.env.REGISTRY_URL
 const branch = process.env.REGISTRY_BRANCH
 const refreshSeconds = parseInt(process.env.REGISTRY_REFRESH || 1800)
-const healthSeconds = parseInt(process.env.HEALTH_REFRESH || 30)
+const healthSeconds = parseInt(process.env.HEALTH_REFRESH || 15)
 
 console.log("Using config:", {
   dir,
@@ -28,10 +28,16 @@ const registry = ChainRegistry(dir, branch)
 let healthInterval
 
 async function updateChains(){
-  if(healthInterval) clearInterval(healthInterval)
+  if(healthInterval) clearTimeout(healthInterval)
   await registry.refresh()
-  healthInterval = setInterval(() => {
-    registry.refreshApis()
+  queueHealthCheck()
+}
+
+async function queueHealthCheck(){
+  healthInterval = setTimeout(() => {
+    registry.refreshApis().then(() => {
+      queueHealthCheck()
+    })
   }, HEALTH_REFRESH_INTERVAL)
 }
 
