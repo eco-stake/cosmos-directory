@@ -36,7 +36,7 @@ class MonitorQueue {
 }
 
 const HealthMonitor = () => {
-  const queue = new PQueue({ concurrency: 50, queueClass: MonitorQueue });
+  const queue = new PQueue({ concurrency: 20, queueClass: MonitorQueue });
 
   function size(){
     return queue.size

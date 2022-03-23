@@ -73,7 +73,7 @@ const ChainRegistry = (repoDir, branch) => {
 
   const refreshApis = async () => {
     timeStamp('Refreshing APIs');
-    await Promise.all(getChains().map(async chain => {
+    await Promise.all([...getChains()].map(async chain => {
       await chain.apis.refreshUrls()
     }))
     timeStamp('Refreshed APIs');

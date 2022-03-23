@@ -73,11 +73,11 @@ const ChainApis = (chainId, apis, monitor) => {
   async function refreshUrls() {
     await Promise.all(urlTypes.map(async type => {
       const urls = apis[type] || [];
-      await Promise.all(urls.map(async url => {
+      await Promise.all([...urls].map(async url => {
         if(monitor.pending(url.address)) return
 
         const currentUrl = current[type][url.address] || {}
-        const urlData = await monitor.checkUrl(url, type, chainId, currentUrl)
+        const urlData = await monitor.checkUrl(url, type, chainId, {...currentUrl})
         current[type][url.address] = urlData
       }));
     }));
