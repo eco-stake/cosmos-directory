@@ -1,5 +1,5 @@
 import Router from 'koa-router';
-import ChainApis from '../chainApis.js';
+import ChainApis from '../chain/chainApis.js';
 import { renderJson } from '../utils.js';
 
 const StatusController = (client, registry) => {

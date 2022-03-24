@@ -3,7 +3,7 @@ import * as http from 'isomorphic-git/http/node/index.cjs'
 import fs from 'fs'
 import _ from 'lodash'
 import { join } from 'path';
-import { timeStamp } from './utils.js';
+import { timeStamp } from '../utils.js';
 
 function ChainRegistryRepo(client, url, branch) {
   const repoDir = join(process.cwd(), '../chain-registry')

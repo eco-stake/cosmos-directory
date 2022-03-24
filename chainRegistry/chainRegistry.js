@@ -1,4 +1,4 @@
-import Chain from './chain.js'
+import Chain from '../chain/chain.js'
 
 const ChainRegistry = (client) => {
   async function chainNames() {

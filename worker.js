@@ -1,7 +1,7 @@
 import { createClient } from 'redis';
-import ChainRegistry from './chainRegistry.js';
-import HealthMonitor from './healthMonitor.js'
-import ChainRegistryRepo from './chainRegistryRepo.js'
+import ChainRegistry from './chainRegistry/chainRegistry.js';
+import ChainRegistryRepo from './chainRegistry/chainRegistryRepo.js';
+import HealthMonitor from './status/healthMonitor.js';
 
 const url = process.env.REGISTRY_URL
 const branch = process.env.REGISTRY_BRANCH

@@ -1,8 +1,8 @@
 import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
-import ChainApis from './chainApis.js';
-import { timeStamp } from './utils.js';
+import ChainApis from '../chain/chainApis.js';
+import { timeStamp } from '../utils.js';
 
 const ALLOWED_DELAY = 5 * 60
 const ALLOWED_ERRORS = 2

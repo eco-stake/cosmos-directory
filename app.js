@@ -2,8 +2,8 @@ import Koa from "koa";
 import Subdomain from 'koa-subdomain';
 import cors from "@koa/cors";
 import { createClient } from 'redis';
-import ChainRegistry from './chainRegistry.js';
-import RegistryController from './registry/registryController.js'
+import ChainRegistry from './chainRegistry/chainRegistry.js';
+import ChainRegistryController from './chainRegistry/chainRegistryController.js'
 import ProxyController from './proxy/proxyController.js'
 import StatusController from './status/statusController.js'
 
@@ -26,7 +26,7 @@ import StatusController from './status/statusController.js'
   subdomain.use('rest', proxy.proxy('rest'));
   subdomain.use('rpc', proxy.proxy('rpc'));
 
-  subdomain.use('registry', RegistryController(registry).routes());
+  subdomain.use('registry', ChainRegistryController(registry).routes());
 
   app.use(subdomain.routes());
 

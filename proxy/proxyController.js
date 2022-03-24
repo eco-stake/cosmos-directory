@@ -1,4 +1,4 @@
-import ChainApis from "../chainApis.js";
+import ChainApis from "../chain/chainApis.js";
 import proxyServer from "./server.js";
 
 const ProxyController = (client, registry) => {
