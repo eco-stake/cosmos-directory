@@ -2,7 +2,7 @@ import Router from 'koa-router';
 import ChainApis from '../chainApis.js';
 import { renderJson } from '../utils.js';
 
-const Status = (client, registry) => {
+const StatusController = (client, registry) => {
   const registryStatus = async () => {
     return {
       chains: registry.chainNames()
@@ -46,4 +46,4 @@ const Status = (client, registry) => {
   }
 }
 
-export default Status
+export default StatusController

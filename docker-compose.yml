@@ -19,7 +19,7 @@ services:
       - node_modules:/usr/src/app/node_modules
     depends_on:
       - redis
-  health:
+  worker:
     build: 
       context: .
       args:
@@ -28,7 +28,7 @@ services:
         - REGISTRY_REFRESH=60
         - HEALTH_REFRESH=5
     environment:
-      - APP=health
+      - APP=worker
     volumes:
       - .:/usr/src/app
       - node_modules:/usr/src/app/node_modules

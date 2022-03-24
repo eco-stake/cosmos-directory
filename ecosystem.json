@@ -2,6 +2,6 @@
   "name": "app",
   "script": "app.js"
 }, {
-  "name": "health",
-  "script": "health.js"
+  "name": "worker",
+  "script": "worker.js"
 }]

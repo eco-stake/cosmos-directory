@@ -1,7 +1,7 @@
 import ChainApis from "../chainApis.js";
 import proxyServer from "./server.js";
 
-const Proxy = (client, registry) => {
+const ProxyController = (client, registry) => {
   function proxy(type){
     return proxyServer("/:chain", (path, options) => loadBalanceProxy(path.chain, type, path, options))
   }
@@ -50,4 +50,4 @@ const Proxy = (client, registry) => {
   }
 }
 
-export default Proxy;
+export default ProxyController;

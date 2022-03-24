@@ -4,9 +4,9 @@ import cors from "@koa/cors";
 import { join } from 'path';
 import { createClient } from 'redis';
 import ChainRegistry from './chainRegistry.js';
-import Registry from './registry/index.js'
-import Proxy from './proxy/index.js'
-import Status from './status/index.js'
+import RegistryController from './registry/registryController.js'
+import ProxyController from './proxy/proxyController.js'
+import StatusController from './status/statusController.js'
 
 (async () => {
   const dir = join(process.cwd(), '../chain-registry')
@@ -39,15 +39,15 @@ import Status from './status/index.js'
 
   app.use(cors());
 
-  const proxy = Proxy(client, registry)
+  const proxy = ProxyController(client, registry)
   subdomain.use('rest', proxy.proxy('rest'));
   subdomain.use('rpc', proxy.proxy('rpc'));
 
-  subdomain.use('registry', Registry(registry).routes());
+  subdomain.use('registry', RegistryController(registry).routes());
 
   app.use(subdomain.routes());
 
-  app.use(Status(client, registry).routes());
+  app.use(StatusController(client, registry).routes());
 
   app.listen(port);
   console.log(`listening on port ${port}`);
