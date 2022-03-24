@@ -11,11 +11,12 @@ const Status = (client, registry) => {
 
   const chainStatus = async (chain) => {
     const apis = ChainApis(client, chain.chainId, chain.apis)
-    return ['rpc', 'rest'].reduce(async (sum, type) => {
-      const available = !!apis.bestAddress(type)
-      sum.available = sum.available === false ? false : available
+    return ['rpc', 'rest'].reduce(async (asyncSum, type) => {
+      const sum = await asyncSum
+      const available = await apis.bestAddress(type)
+      sum.available = sum.available === false ? false : !!available
       sum[type] = {
-        available: available,
+        available: !!available,
         best: await apis.bestUrls(type),
         current: await apis.current(type)
       }
@@ -34,6 +35,7 @@ const Status = (client, registry) => {
     router.get('/:chain/status', async (ctx, next) => {
       const chain = registry.getChain(ctx.params.chain)
       const status = await chainStatus(chain)
+      console.log(status)
       renderJson(ctx, chain && status)
     });
 
