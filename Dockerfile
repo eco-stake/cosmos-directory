@@ -21,4 +21,7 @@ ENV REGISTRY_REFRESH=${REGISTRY_REFRESH}
 
 EXPOSE 3000
 
-CMD ["pm2-runtime", "proxy.js"]
+ENV APP=app
+ENV INSTANCES=1
+
+CMD pm2-runtime ${APP}.js --instances $INSTANCES

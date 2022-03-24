@@ -55,60 +55,60 @@
      const params = match(ctx.path)
      if (!params) return next()
  
-     let opts
-     if (typeof options === 'function') {
-       opts = options.call(options, params, ctx)
-     } else {
-       opts = Object.assign({}, options)
-     }
-     // object-rest-spread is still in stage-3
-     // https://github.com/tc39/proposal-object-rest-spread
-     const { logs, rewrite, events } = opts
- 
-     const httpProxyOpts = Object.keys(opts)
-       .filter(n => ['logs', 'rewrite', 'events'].indexOf(n) < 0)
-       .reduce((prev, cur) => {
-         prev[cur] = opts[cur]
-         return prev
-       }, {})
- 
-     return new Promise((resolve, reject) => {
+     return new Promise(async (resolve, reject) => {
+       let opts
+       if (typeof options === 'function') {
+         opts = await options.call(options, params, ctx)
+       } else {
+         opts = Object.assign({}, options)
+       }
+       // object-rest-spread is still in stage-3
+       // https://github.com/tc39/proposal-object-rest-spread
+       const { logs, rewrite, events } = opts
+
+       const httpProxyOpts = Object.keys(opts)
+         .filter(n => ['logs', 'rewrite', 'events'].indexOf(n) < 0)
+         .reduce((prev, cur) => {
+           prev[cur] = opts[cur]
+           return prev
+         }, {})
+
        ctx.req.oldPath = ctx.req.url
- 
+
        if (typeof rewrite === 'function') {
          ctx.req.url = rewrite(ctx.req.url, ctx)
        }
- 
+
        if (logs) {
          typeof logs === 'function' ? logs(ctx, opts.target) : logger(ctx, opts.target)
        }
- 
+
        if (events && typeof events === 'object') {
          ctx.req[REQUEST_IDENTIFIER] = middlewareId
- 
+
          Object
            .entries(events)
            .forEach(([event, handler]) => {
              const eventHandler = proxyEventHandlers[event] == null
                ? setupProxyEventHandler(event)
                : proxyEventHandlers[event]
- 
+
              if (typeof eventHandler === 'object' && !eventHandler.has(middlewareId)) {
                eventHandler.set(middlewareId, handler)
              }
            })
        }
- 
+
        // Let the promise be solved correctly after the proxy.web.
        // The solution comes from https://github.com/nodejitsu/node-http-proxy/issues/951#issuecomment-179904134
        ctx.res.on('close', () => {
          reject(new Error(`Http response closed while proxying ${ctx.req.oldPath}`))
        })
- 
+
        ctx.res.on('finish', () => {
          resolve()
        })
- 
+
        proxy.web(ctx.req, ctx.res, httpProxyOpts, e => {
          const status = {
            ECONNREFUSED: 503,
@@ -118,12 +118,12 @@
          resolve()
        })
      })
-   }
- }
- 
- const _proxy = proxy
+  }
+}
+
+const _proxy = proxy
 export { _proxy as proxy }
- 
- function logger (ctx, target) {
-   console.log('%s - %s %s proxy to -> %s', new Date().toISOString(), ctx.req.method, ctx.req.oldPath, new URL(ctx.req.url, target))
- }
+
+function logger(ctx, target) {
+  console.log('%s - %s %s proxy to -> %s', new Date().toISOString(), ctx.req.method, ctx.req.oldPath, new URL(ctx.req.url, target))
+}

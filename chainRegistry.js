@@ -1,34 +1,31 @@
-import { setConfig as _setConfig, fetch, checkout } from 'isomorphic-git'
+import { setConfig as _setConfig, fetch, checkout, addRemote } from 'isomorphic-git'
 import * as http from 'isomorphic-git/http/node/index.cjs'
 import fs from 'fs'
 import { join } from 'path'
 import { timeStamp } from './utils.js';
 import Chain from './chain.js'
-import HealthMonitor from "./healthMonitor.js"
 
-const ChainRegistry = (repoDir, branch) => {
-  const monitor = HealthMonitor()
+const ChainRegistry = (repoDir, url, branch) => {
   let chains = {}
 
-  const status = () => {
-    return {
-      monitorQueue: monitor.size(),
-      chains: chainNames()
-    }
-  }
-
-  const setConfig = () => {
-    return _setConfig({
+  const setConfig = async () => {
+    await _setConfig({
       fs,
       dir: repoDir,
       path: 'user.name',
       value: 'ECO Stake'
     })
+    await addRemote({
+      fs,
+      dir: repoDir,
+      remote: 'origin',
+      url: url
+    })
   }
 
   const updateRepo = async () => {
     await setConfig()
-    await fetch({ fs, http, dir: repoDir, ref: branch })
+    await fetch({ fs, http, dir: repoDir, ref: branch, url: url, singleBranch: true })
     await checkout({ fs, dir: repoDir, ref: `origin/${branch}`, force: true })
   }
 
@@ -51,13 +48,7 @@ const ChainRegistry = (repoDir, branch) => {
     const assetListData = fs.existsSync(assetListPath) ? fs.readFileSync(assetListPath) : undefined
     const chainJson = JSON.parse(chainData)
     const assetListJson = assetListData && JSON.parse(assetListData)
-    const existing = getChain(dir)
-    if(existing){
-      existing.update(chainJson, assetListJson)
-      return existing
-    }else{
-      return Chain(dir, chainJson, assetListJson, monitor)
-    }
+    return Chain(dir, chainJson, assetListJson)
   }
 
   const refresh = async () => {
@@ -69,14 +60,6 @@ const ChainRegistry = (repoDir, branch) => {
     } catch (error) {
       timeStamp('Failed to update repository', error);
     }
-  }
-
-  const refreshApis = async () => {
-    timeStamp('Refreshing APIs');
-    await Promise.all([...getChains()].map(async chain => {
-      await chain.apis.refreshUrls()
-    }))
-    timeStamp('Refreshed APIs');
   }
 
   const loadChains = () => {
@@ -94,9 +77,7 @@ const ChainRegistry = (repoDir, branch) => {
   }
 
   return {
-    status,
     refresh,
-    refreshApis,
     getChains,
     getChain,
     chainNames

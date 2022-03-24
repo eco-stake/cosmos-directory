@@ -8,11 +8,42 @@ services:
         - REGISTRY_URL=https://github.com/eco-stake/chain-registry
         - REGISTRY_BRANCH=cosmos-directory-dev
         - REGISTRY_REFRESH=60
+        - HEALTH_REFRESH=5
+    environment:
+      - APP=app
+      - INSTANCES=3
     ports:
       - '3000:3000'
     volumes:
       - .:/usr/src/app
       - node_modules:/usr/src/app/node_modules
+    depends_on:
+      - redis
+  health:
+    build: 
+      context: .
+      args:
+        - REGISTRY_URL=https://github.com/eco-stake/chain-registry
+        - REGISTRY_BRANCH=cosmos-directory-dev
+        - REGISTRY_REFRESH=60
+        - HEALTH_REFRESH=5
+    environment:
+      - APP=health
+    volumes:
+      - .:/usr/src/app
+      - node_modules:/usr/src/app/node_modules
+    depends_on:
+      - redis
+      - app
+  redis:
+    image: redislabs/rejson:latest
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --loadmodule /usr/lib/redis/modules/rejson.so --save 20 1 --loglevel warning
+    volumes: 
+      - redis_data:/data
 
 volumes:
   node_modules:
+  redis_data:
