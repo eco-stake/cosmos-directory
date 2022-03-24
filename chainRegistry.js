@@ -54,7 +54,13 @@ const ChainRegistry = (repoDir, url, branch) => {
   const refresh = async () => {
     try {
       timeStamp('Loading chains');
-      await updateRepo()
+      if(process.env.NODE_APP_INSTANCE === '0'){
+        timeStamp('Updating repo');
+        await updateRepo()
+      }else{
+        timeStamp('Sleeping for 2 seconds to allow leader to update');
+        await new Promise(r => setTimeout(r, 2000));
+      }
       loadChains()
       timeStamp('Loaded chains', chainNames());
     } catch (error) {
