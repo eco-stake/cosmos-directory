@@ -7,7 +7,7 @@ const ProxyController = (client, registry) => {
   }
 
   async function loadBalanceProxy(key, type, path, options) {
-    const chain = registry.getChain(key)
+    const chain = await registry.getChain(key)
     const apis = chain && ChainApis(client, chain.chainId, chain.apis)
     const url = apis && await apis.bestAddress(type)
     options.res.locals = {

@@ -22,24 +22,25 @@ function RegistryController(registry) {
   function routes() {
     const router = new Router();
 
-    router.get('/', (ctx, next) => {
-      renderJson(ctx, registry.getChains().map(chain => {
+    router.get('/', async (ctx, next) => {
+      const chains = await registry.getChains()
+      renderJson(ctx, chains.map(chain => {
         return summary(chain);
       }));
     });
 
-    router.get('/:chain', (ctx, next) => {
-      const chain = registry.getChain(ctx.params.chain);
+    router.get('/:chain', async (ctx, next) => {
+      const chain = await registry.getChain(ctx.params.chain);
       renderJson(ctx, chain && summary(chain));
     });
 
-    router.get('/:chain/chain', (ctx, next) => {
-      const chain = registry.getChain(ctx.params.chain);
+    router.get('/:chain/chain', async (ctx, next) => {
+      const chain = await registry.getChain(ctx.params.chain);
       renderJson(ctx, chain && chain.chain);
     });
 
-    router.get('/:chain/assetlist', (ctx, next) => {
-      const chain = registry.getChain(ctx.params.chain);
+    router.get('/:chain/assetlist', async (ctx, next) => {
+      const chain = await registry.getChain(ctx.params.chain);
       renderJson(ctx, chain && chain.assetlist);
     });
 

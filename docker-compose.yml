@@ -2,16 +2,10 @@ version: "3.3"
 
 services:
   app:
-    build: 
-      context: .
-      args:
-        - REGISTRY_URL=https://github.com/eco-stake/chain-registry
-        - REGISTRY_BRANCH=cosmos-directory-dev
-        - REGISTRY_REFRESH=60
-        - HEALTH_REFRESH=5
+    build: .
     environment:
-      - APP=app
-      - INSTANCES=3
+      - APP_NAME=app
+      - APP_COUNT=3
     ports:
       - '3000:3000'
     volumes:
@@ -20,15 +14,13 @@ services:
     depends_on:
       - redis
   worker:
-    build: 
-      context: .
-      args:
-        - REGISTRY_URL=https://github.com/eco-stake/chain-registry
-        - REGISTRY_BRANCH=cosmos-directory-dev
-        - REGISTRY_REFRESH=60
-        - HEALTH_REFRESH=5
+    build: .
     environment:
-      - APP=worker
+      - APP_NAME=worker
+      - REGISTRY_URL=https://github.com/eco-stake/chain-registry
+      - REGISTRY_BRANCH=cosmos-directory-dev
+      - REGISTRY_REFRESH=60
+      - HEALTH_REFRESH=10
     volumes:
       - .:/usr/src/app
       - node_modules:/usr/src/app/node_modules

@@ -5,7 +5,7 @@ import { renderJson } from '../utils.js';
 const StatusController = (client, registry) => {
   const registryStatus = async () => {
     return {
-      chains: registry.chainNames()
+      chains: await registry.chainNames()
     }
   }
 
@@ -33,7 +33,7 @@ const StatusController = (client, registry) => {
     });
 
     router.get('/:chain/status', async (ctx, next) => {
-      const chain = registry.getChain(ctx.params.chain)
+      const chain = await registry.getChain(ctx.params.chain)
       const status = await chainStatus(chain)
       renderJson(ctx, chain && status)
     });

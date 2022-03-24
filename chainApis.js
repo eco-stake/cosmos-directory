@@ -36,7 +36,7 @@ const ChainApis = (client, chainId, apis) => {
 
   async function current(type) {
     if(!await client.exists('health:' + chainId)){
-      await client.json.set('health:' + chainId, '$', {})
+      return {}
     }
     const currentUrls = await client.json.get('health:' + chainId, '$')
     return currentUrls[type] || {}
