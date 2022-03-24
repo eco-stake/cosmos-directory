@@ -35,7 +35,6 @@ const Status = (client, registry) => {
     router.get('/:chain/status', async (ctx, next) => {
       const chain = registry.getChain(ctx.params.chain)
       const status = await chainStatus(chain)
-      console.log(status)
       renderJson(ctx, chain && status)
     });
 

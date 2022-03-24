@@ -1,7 +1,7 @@
 import _ from "lodash"
 
 const BEST_NODE_COUNT = 2
-const BEST_HEIGHT_DIFF = 2
+const BEST_HEIGHT_DIFF = 5
 const BEST_RESPONSE_DIFF = 1
 
 const ChainApis = (client, chainId, apis) => {
@@ -23,14 +23,14 @@ const ChainApis = (client, chainId, apis) => {
 
     return urls.filter(el => {
       return el.blockHeight >= (best.blockHeight - BEST_HEIGHT_DIFF) && 
-        el.responseTime >= (best.responseTime - BEST_RESPONSE_DIFF * 1000)
+        el.responseTime <= (best.responseTime + BEST_RESPONSE_DIFF * 1000)
     }).map(el => el.url);
   }
 
   async function orderedUrls(type) {
     const urls = Object.values(await current(type))
     return urls.sort((a, b) => {
-      return b.blockHeight - a.blockHeight || a.responseTime - b.responseTime
+      return a.responseTime - b.responseTime
     });
   }
 
