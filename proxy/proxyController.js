@@ -7,11 +7,8 @@ const ProxyController = (client, registry) => {
 
   async function loadBalanceProxy(key, type, path, options) {
     const chain = await registry.getChain(key)
-    const apis = chain && chain.apis
-    const url = apis && await apis.bestAddress(type)
-    options.res.locals = {
-      chain, url
-    }
+    const url = chain && await chain.apis.bestAddress(type)
+    options.res.locals = { chainExists: !!chain, urlExists: !!url }
     const regexp = new RegExp("\^\\/" + key, 'g');
     const response = {
       changeOrigin: true,
@@ -19,14 +16,13 @@ const ProxyController = (client, registry) => {
       target: 'https://cosmos.directory',
       events: {
         proxyReq: (proxyReq, req, res) => {
-          const chain = res.locals.chain
-          const url = res.locals.url
-          if (!chain) {
+          const { chainExists, urlExists } = res.locals
+          if (!chainExists) {
             res.writeHead(404, {
               'Content-Type': 'text/plain'
             });
             return res.end('Not found');
-          } else if (!url) {
+          } else if (!urlExists) {
             res.writeHead(502, {
               'Content-Type': 'text/plain'
             });
