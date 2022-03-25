@@ -1,6 +1,6 @@
 import { createClient } from 'redis';
 import ChainRegistry from './chainRegistry/chainRegistry.js';
-import ChainRegistryRepo from './chainRegistry/chainRegistryRepo.js';
+import Repository from './repository/repository.js';
 import HealthMonitor from './status/healthMonitor.js';
 
 const url = process.env.REGISTRY_URL
@@ -35,7 +35,7 @@ async function queueHealthCheck(client, registry, health) {
   await client.connect();
 
   const health = HealthMonitor()
-  const chainRepo = ChainRegistryRepo(client, url, branch)
+  const chainRepo = Repository(client, url, branch, { exclude: ['testnets'] })
   const registry = ChainRegistry(client)
 
   await chainRepo.refresh()

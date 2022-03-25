@@ -34,14 +34,10 @@ function ChainRegistryController(registry) {
       renderJson(ctx, chain && summary(chain));
     });
 
-    router.get('/:chain/chain', async (ctx, next) => {
+    router.get('/:chain/:dataset', async (ctx, next) => {
       const chain = await registry.getChain(ctx.params.chain);
-      renderJson(ctx, chain && chain.chain);
-    });
-
-    router.get('/:chain/assetlist', async (ctx, next) => {
-      const chain = await registry.getChain(ctx.params.chain);
-      renderJson(ctx, chain && chain.assetlist);
+      const dataset = ctx.params.dataset.replace(/\.[^.]*$/,'')
+      renderJson(ctx, chain && chain[dataset]);
     });
 
     return router.routes();

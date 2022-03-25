@@ -5,7 +5,7 @@ import { renderJson } from '../utils.js';
 const StatusController = (client, registry) => {
   const registryStatus = async () => {
     return {
-      chains: await registry.chainNames()
+      directories: await registry.directories()
     }
   }
 
