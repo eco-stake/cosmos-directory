@@ -2,37 +2,11 @@ import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
 import { timeStamp } from '../utils.js';
+import { MonitorQueue } from './monitorQueue.js';
 
 const ALLOWED_DELAY = 5 * 60
 const ALLOWED_ERRORS = 2
 const ERROR_COOLDOWN = 5 * 60
-
-class MonitorQueue {
-	constructor() {
-		this._queue = [];
-	}
-
-	enqueue(run, options) {
-    const runData = {
-      address: options.address,
-      run: run
-    }
-    return this._queue.push(runData);
-	}
-
-	dequeue() {
-		const job = this._queue.shift()
-    return job.run;
-	}
-
-	get size() {
-		return this._queue.length;
-	}
-
-	filter(options) {
-		return this._queue.filter(el => el.address === options.address);
-	}
-}
 
 function HealthMonitor() {
   const queue = new PQueue({ concurrency: 20, queueClass: MonitorQueue });
