@@ -16,7 +16,6 @@ function HealthMonitor() {
   }
 
   async function refreshApis(client, chains) {
-    timeStamp('Refreshing APIs');
     await Promise.all([...chains].map(async (chain) => {
       const apis = chain.apis
       await Promise.all(['rpc', 'rest'].map(async (type) => {
@@ -37,7 +36,6 @@ function HealthMonitor() {
         }, {}));
       }));
     }));
-    timeStamp('Refreshed APIs');
   }
 
   function checkUrl(url, type, chainId, currentUrl) {
