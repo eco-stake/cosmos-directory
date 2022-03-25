@@ -55,10 +55,10 @@
      const params = match(ctx.path)
      if (!params) return next()
  
-     return new Promise(async (resolve, reject) => {
+     return new Promise((resolve, reject) => {
        let opts
        if (typeof options === 'function') {
-         opts = await options.call(options, params, ctx)
+         opts = options.call(options, params, ctx)
        } else {
          opts = Object.assign({}, options)
        }

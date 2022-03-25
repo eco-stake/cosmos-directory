@@ -1,34 +1,52 @@
 import proxyServer from "./server.js";
+import compose from 'koa-compose'
+import pathMatch from "path-match";
 
 const ProxyController = (client, registry) => {
+  const route = pathMatch({
+    // path-to-regexp options
+    sensitive: false,
+    strict: false,
+    end: false
+  })
+
   function proxy(type){
-    return proxyServer("/:chain", (path, options) => proxyOptions(path.chain, type, path, options))
+    return compose([
+      getChain(type),
+      proxyServer("/:chain", (path, options) => proxyOptions(path.chain, options))
+    ])
   }
 
-  async function proxyOptions(key, type, path, options) {
-    const chain = await registry.getChain(key)
-    const url = chain && await chain.apis.bestAddress(type)
-    options.res.locals = { chainExists: !!chain, urlExists: !!url }
+  function getChain(type){
+    return async (ctx, next) => {
+      const match = route('/:chain')
+      const params = match(ctx.path)
+      const key = params?.chain
+      const chain = key && await registry.getChain(key)
+      const url = chain && await chain.apis.bestAddress(type)
+      if (!chain) {
+        ctx.res.writeHead(404, {
+          'Content-Type': 'text/plain'
+        });
+        return ctx.res.end('Chain not found');
+      } else if (!url) {
+        ctx.res.writeHead(502, {
+          'Content-Type': 'text/plain'
+        });
+        return ctx.res.end('No servers available');
+      }
+      ctx.state.proxyUrl = url
+      return next()
+    }
+  }
+
+  function proxyOptions(key, ctx) {
     const regexp = new RegExp("\^\\/" + key, 'g');
     const response = {
-      target: 'https://cosmos.directory',
+      target: ctx.state.proxyUrl,
       changeOrigin: true,
       rewrite: path => path.replace(regexp, ''),
       events: {
-        proxyReq: (proxyReq, req, res) => {
-          const { chainExists, urlExists } = res.locals
-          if (!chainExists) {
-            res.writeHead(404, {
-              'Content-Type': 'text/plain'
-            });
-            return res.end('Not found');
-          } else if (!urlExists) {
-            res.writeHead(502, {
-              'Content-Type': 'text/plain'
-            });
-            return res.end('No servers available');
-          }
-        },
         error: (err, req, res) => {
           res.writeHead(500, {
             'Content-Type': 'text/plain'
@@ -37,12 +55,6 @@ const ProxyController = (client, registry) => {
         }
       }
     }
-
-    if (url) {
-      response.target = url
-      // response.logs = true
-    }
-
     return response
   }
 
