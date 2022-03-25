@@ -1,4 +1,3 @@
-import ChainApis from "../chain/chainApis.js";
 import proxyServer from "./server.js";
 
 const ProxyController = (client, registry) => {
@@ -8,7 +7,7 @@ const ProxyController = (client, registry) => {
 
   async function loadBalanceProxy(key, type, path, options) {
     const chain = await registry.getChain(key)
-    const apis = chain && ChainApis(client, chain.chainId, chain.apis)
+    const apis = chain && chain.apis
     const url = apis && await apis.bestAddress(type)
     options.res.locals = {
       chain, url

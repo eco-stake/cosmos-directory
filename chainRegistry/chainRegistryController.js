@@ -36,8 +36,9 @@ function ChainRegistryController(registry) {
 
     router.get('/:chain/:dataset', async (ctx, next) => {
       const chain = await registry.getChain(ctx.params.chain);
-      const dataset = ctx.params.dataset.replace(/\.[^.]*$/,'')
-      renderJson(ctx, chain && chain[dataset]);
+      let dataset = ctx.params.dataset.replace(/\.[^.]*$/,'')
+      dataset = ['directory'].includes(dataset) ? undefined : dataset
+      renderJson(ctx, chain && dataset && chain.data[dataset]);
     });
 
     return router.routes();

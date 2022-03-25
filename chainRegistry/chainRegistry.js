@@ -22,7 +22,9 @@ const ChainRegistry = (client) => {
     }
 
     const data = await client.json.get('chain-registry:' + name, '$')
-    return Chain(data)
+    if(!data.chain) return
+
+    return Chain(client, data)
   }
 
   return {

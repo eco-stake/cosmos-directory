@@ -1,5 +1,4 @@
 import Router from 'koa-router';
-import ChainApis from '../chain/chainApis.js';
 import { renderJson } from '../utils.js';
 
 const StatusController = (client, registry) => {
@@ -10,7 +9,7 @@ const StatusController = (client, registry) => {
   }
 
   const chainStatus = async (chain) => {
-    const apis = ChainApis(client, chain.chainId, chain.apis)
+    const apis = chain.apis
     return ['rpc', 'rest'].reduce(async (asyncSum, type) => {
       const sum = await asyncSum
       const available = await apis.bestAddress(type)

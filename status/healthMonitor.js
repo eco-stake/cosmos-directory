@@ -1,7 +1,6 @@
 import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
-import ChainApis from '../chain/chainApis.js';
 import { timeStamp } from '../utils.js';
 
 const ALLOWED_DELAY = 5 * 60
@@ -45,7 +44,7 @@ function HealthMonitor() {
   async function refreshApis(client, chains) {
     timeStamp('Refreshing APIs');
     await Promise.all([...chains].map(async (chain) => {
-      const apis = ChainApis(client, chain.chainId, chain.apis || {});
+      const apis = chain.apis
       await Promise.all(['rpc', 'rest'].map(async (type) => {
         const urls = apis.apis[type] || [];
         const current = await apis.current(type);
