@@ -1,4 +1,3 @@
-import proxyServer from "./server.js";
 import compose from 'koa-compose'
 import pathMatch from "path-match";
 import koaCash from '../lib/koaCache.js';
@@ -9,20 +8,19 @@ const CACHED_REQUESTS = {
   'cosmos/authz/v1beta1/grants': 1 * 60
 }
 
-const ProxyController = (client, registry) => {
+const ProxyController = (client, registry, proxy) => {
   const route = pathMatch({
-    // path-to-regexp options
     sensitive: false,
     strict: false,
     end: false
   })
 
-  function proxy(type){
+  function routes(type){
     return compose([
       getChain(type),
       initCache(),
       serveCache,
-      proxyServer("/:chain", (path, options) => proxyOptions(path.chain, options))
+      proxyRequest
     ])
   }
 
@@ -30,8 +28,8 @@ const ProxyController = (client, registry) => {
     return async (ctx, next) => {
       const match = route('/:chain')
       const params = match(ctx.path)
-      const key = params?.chain
-      const chain = key && await registry.getChain(key)
+      const chainName = params?.chain
+      const chain = chainName && await registry.getChain(chainName)
       const url = chain && await chain.apis.bestAddress(type)
       if (!chain) {
         ctx.res.writeHead(404, {
@@ -44,6 +42,7 @@ const ProxyController = (client, registry) => {
         });
         return ctx.res.end('No servers available');
       }
+      ctx.state.chainName = chainName
       ctx.state.proxyUrl = url
       return next()
     }
@@ -82,40 +81,44 @@ const ProxyController = (client, registry) => {
     return next()
   }
 
-  function proxyOptions(key, ctx) {
-    const regexp = new RegExp("\^\\/" + key, 'g');
-    const response = {
-      target: ctx.state.proxyUrl,
-      changeOrigin: true,
-      proxyTimeout: 30 * 1000,
-      rewrite: path => path.replace(regexp, ''),
-      headers: {
-        'accept-encoding': '*;q=1,gzip=0'
-      },
-      events: {
-        proxyRes: (proxyRes, req, res) => {
-          var body = [];
-          proxyRes.on('data', function(chunk) {
-            body.push(chunk);
-          });
-      
-          proxyRes.on('end', function() {
-            res.rawBody = Buffer.concat(body).toString()
-          });
-        },
-        error: (err, req, res) => {
-          res.writeHead(500, {
-            'Content-Type': 'text/plain'
-          });
-          res.end('Something went wrong: ' + err.message);
+  async function proxyRequest(ctx, next){
+    const chainName = ctx.state.chainName
+    if (!chainName) return next()
+
+    return new Promise((resolve) => {
+      const opts = {
+        target: ctx.state.proxyUrl,
+        changeOrigin: true,
+        proxyTimeout: 30 * 1000,
+        headers: {
+          'accept-encoding': '*;q=1,gzip=0'
         }
       }
-    }
-    return response
+      ctx.req.oldPath = ctx.req.url
+      const regexp = new RegExp("\^\\/" + chainName, 'g');
+      ctx.req.url = ctx.req.url.replace(regexp, '')
+
+      ctx.res.on('close', () => { 
+        resolve()
+      })
+
+      ctx.res.on('finish', () => { 
+        resolve()
+      })
+
+      proxy.web(ctx.req, ctx.res, opts, e => {
+        const status = {
+          ECONNREFUSED: 503,
+          ETIMEOUT: 504
+        }[e.code];
+        ctx.status = status || 500;
+        resolve()
+      })
+    })
   }
 
   return {
-    proxy
+    routes
   }
 }
 
