@@ -7,13 +7,9 @@ const BEST_ERROR_DIFF = 5 * 60
 const IGNORE_ERROR_DIFF = 60 * 60
 
 const ChainApis = (client, chainId, apis) => {
-  let currentIndex = 1
-  
   async function bestAddress(type) {
     const urls = await bestUrls(type).then(urls => urls.slice(0, BEST_NODE_COUNT))
-    const cur = currentIndex % urls.length;
-    currentIndex++;
-    const best = urls[cur];
+    const best = _.sample(urls)
     return best && best.address.replace(/\/$|$/, '/');
   }
 

@@ -28,9 +28,7 @@ const { createProxyServer } = httpProxy;
 
   app.use(cors());
 
-  const proxy = createProxyServer({
-    followRedirects: false
-  })
+  const proxy = createProxyServer()
 
   proxy.on('proxyRes', (proxyRes, req, res) => {
     var body = [];

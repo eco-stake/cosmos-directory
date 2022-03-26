@@ -24,8 +24,10 @@ function HealthMonitor() {
         const urls = apis.apis[type] || [];
         const current = await apis.current(type);
         const updated = await Promise.all([...urls].map(async (url) => {
-          if (pending(url.address))
-            return;
+          try {
+            url.address = url.address && new URL(url.address).href
+          } catch { return }
+          if (!url.address || pending(url.address)) return;
 
           const currentUrl = current[url.address];
           return await checkUrl(url, type, chain.chainId, { ...currentUrl });
@@ -103,7 +105,8 @@ function HealthMonitor() {
       available: nowAvailable,
       blockHeight: blockHeight,
       blockTime: blockTime,
-      responseTime
+      responseTime,
+      lastCheck: Date.now()
     };
   }
 
