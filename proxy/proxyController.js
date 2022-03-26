@@ -90,6 +90,7 @@ const ProxyController = (client, registry, proxy) => {
         target: ctx.state.proxyUrl,
         changeOrigin: true,
         proxyTimeout: 30 * 1000,
+        timeout: 30 * 1000,
         xfwd: true,
         secure: false,
         followRedirects: true,

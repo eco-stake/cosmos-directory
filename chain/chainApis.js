@@ -27,7 +27,7 @@ const ChainApis = (client, chainId, apis) => {
 
       return el.responseTime <= (bestTime + BEST_RESPONSE_DIFF * 1000)
     })
-    const bestErrors = Math.min(...urls.map(el => el.lastErrorAt).filter(Number.isFinite))
+    const bestErrors = Math.min(...urls.map(el => (el.lastErrorAt || 0)).filter(Number.isFinite))
     urls = urls.filter(el => {
       if(!el.lastErrorAt || el.lastErrorAt <= (Date.now() - IGNORE_ERROR_DIFF * 1000)) return true
 
