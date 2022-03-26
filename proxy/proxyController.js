@@ -1,7 +1,7 @@
 import proxyServer from "./server.js";
 import compose from 'koa-compose'
 import pathMatch from "path-match";
-import koaCash from '../koaCache.js';
+import koaCash from '../lib/koaCache.js';
 import safeStringify from 'fast-safe-stringify'
 
 const CACHED_REQUESTS = {
