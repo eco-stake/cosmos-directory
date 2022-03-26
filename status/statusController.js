@@ -33,8 +33,8 @@ const StatusController = (client, registry) => {
 
     router.get('/:chain/status', async (ctx, next) => {
       const chain = await registry.getChain(ctx.params.chain)
-      const status = await chainStatus(chain)
-      renderJson(ctx, chain && status)
+      const status = chain && await chainStatus(chain)
+      renderJson(ctx, status)
     });
 
     return router.routes()
