@@ -5,8 +5,9 @@ import { timeStamp } from '../utils.js';
 import { MonitorQueue } from './monitorQueue.js';
 
 const ALLOWED_DELAY = 10 * 60
-const ALLOWED_ERRORS = 2
-const ERROR_COOLDOWN = 10 * 60
+const ALLOWED_ERRORS = 3
+const ERROR_COOLDOWN = 15 * 60
+const HEALTH_TIMEOUT = 3000
 
 function HealthMonitor() {
   const queue = new PQueue({ concurrency: 20, queueClass: MonitorQueue });
@@ -16,6 +17,7 @@ function HealthMonitor() {
   }
 
   async function refreshApis(client, chains) {
+    timeStamp('Running health checks');
     await Promise.all([...chains].map(async (chain) => {
       const apis = chain.apis
       await Promise.all(['rpc', 'rest'].map(async (type) => {
@@ -42,7 +44,7 @@ function HealthMonitor() {
     const request = async () => {
       try {
         const response = await got.get(url.address + '/' + urlPath(type), {
-          timeout: { request: 2000 },
+          timeout: { request: HEALTH_TIMEOUT },
           retry: { limit: 1 }
         });
         const { timings, body } = response;
@@ -61,7 +63,8 @@ function HealthMonitor() {
   }
 
   function buildUrl(type, chainId, url, currentUrl, data, responseTime, error) {
-    let blockTime, blockHeight;
+    let blockTime = currentUrl?.blockTime
+    let blockHeight = currentUrl?.blockHeight || 0;
     if (!error) {
       ({ error, blockTime, blockHeight } = checkHeader(type, data, chainId));
     }

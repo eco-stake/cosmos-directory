@@ -3,6 +3,8 @@ import _ from "lodash"
 const BEST_NODE_COUNT = 2
 const BEST_HEIGHT_DIFF = 5
 const BEST_RESPONSE_DIFF = 1
+const BEST_ERROR_DIFF = 5 * 60
+const IGNORE_ERROR_DIFF = 60 * 60
 
 const ChainApis = (client, chainId, apis) => {
   let currentIndex = 1
@@ -16,22 +18,28 @@ const ChainApis = (client, chainId, apis) => {
   }
 
   async function bestUrls(type) {
-    const urls = await orderedUrls(type).then(urls => urls.filter(el => el.available))
-    const best = urls[0];
-    if (!best)
-      return [];
+    let urls = Object.values(await current(type)).filter(el => el.available)
+    const bestHeight = Math.max(...urls.map(el => el.blockHeight).filter(Number.isFinite))
+    urls = urls.filter(el => {
+      if(!el.blockHeight) return false
 
-    return urls.filter(el => {
-      return el.blockHeight >= (best.blockHeight - BEST_HEIGHT_DIFF) && 
-        el.responseTime <= (best.responseTime + BEST_RESPONSE_DIFF * 1000)
-    }).map(el => el.url);
-  }
+      return el.blockHeight >= (bestHeight - BEST_HEIGHT_DIFF)
+    })
+    const bestTime = Math.min(...urls.map(el => el.responseTime).filter(Number.isFinite))
+    urls = urls.filter(el => {
+      if(!el.responseTime) return false
 
-  async function orderedUrls(type) {
-    const urls = Object.values(await current(type))
+      return el.responseTime <= (bestTime + BEST_RESPONSE_DIFF * 1000)
+    })
+    const bestErrors = Math.min(...urls.map(el => el.lastErrorAt).filter(Number.isFinite))
+    urls = urls.filter(el => {
+      if(!el.lastErrorAt || el.lastErrorAt <= (Date.now() - IGNORE_ERROR_DIFF * 1000)) return true
+
+      return el.lastErrorAt <= (bestErrors + BEST_ERROR_DIFF * 1000)
+    })
     return urls.sort((a, b) => {
       return a.responseTime - b.responseTime
-    });
+    }).map(el => el.url);
   }
 
   async function current(type) {

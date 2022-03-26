@@ -44,10 +44,9 @@ function Repository(client, url, branch, opts) {
 
   async function refresh() {
     try {
-      timeStamp('Loading', name);
+      timeStamp('Updating repository', name);
       await updateRepo();
       await loadData();
-      timeStamp('Loaded', name);
     } catch (error) {
       timeStamp('Failed to update', name, error);
     }

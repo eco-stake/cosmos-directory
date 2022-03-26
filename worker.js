@@ -6,7 +6,7 @@ import HealthMonitor from './status/healthMonitor.js';
 const url = process.env.REGISTRY_URL
 const branch = process.env.REGISTRY_BRANCH
 const refreshSeconds = parseInt(process.env.REGISTRY_REFRESH || 1800)
-const healthSeconds = parseInt(process.env.HEALTH_REFRESH || 15)
+const healthSeconds = parseInt(process.env.HEALTH_REFRESH || 10)
 const REGISTRY_REFRESH_INTERVAL = 1000 * refreshSeconds
 const HEALTH_REFRESH_INTERVAL = 1000 * healthSeconds
 
