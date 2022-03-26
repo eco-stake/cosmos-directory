@@ -4,9 +4,9 @@ import _ from 'lodash'
 import { timeStamp } from '../utils.js';
 import { MonitorQueue } from './monitorQueue.js';
 
-const ALLOWED_DELAY = 5 * 60
+const ALLOWED_DELAY = 10 * 60
 const ALLOWED_ERRORS = 2
-const ERROR_COOLDOWN = 5 * 60
+const ERROR_COOLDOWN = 10 * 60
 
 function HealthMonitor() {
   const queue = new PQueue({ concurrency: 20, queueClass: MonitorQueue });
@@ -42,7 +42,7 @@ function HealthMonitor() {
     const request = async () => {
       try {
         const response = await got.get(url.address + '/' + urlPath(type), {
-          timeout: { request: 5000 },
+          timeout: { request: 2000 },
           retry: { limit: 1 }
         });
         const { timings, body } = response;

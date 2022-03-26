@@ -45,6 +45,7 @@ const ProxyController = (client, registry) => {
     const response = {
       target: ctx.state.proxyUrl,
       changeOrigin: true,
+      proxyTimeout: 30 * 1000,
       rewrite: path => path.replace(regexp, ''),
       events: {
         error: (err, req, res) => {
