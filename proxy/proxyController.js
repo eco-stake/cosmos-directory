@@ -2,15 +2,38 @@ import compose from 'koa-compose'
 import pathMatch from "path-match";
 import http from 'http'
 import https from 'https'
-import koaCash from '../lib/koaCache.js';
+import httpProxy from 'http-proxy';
 import safeStringify from 'fast-safe-stringify'
+import koaCash from '../lib/koaCache.js';
+
+const { createProxyServer } = httpProxy;
 
 const CACHED_REQUESTS = {
   'cosmos/staking/v1beta1/validators': 5 * 60,
   'cosmos/authz/v1beta1/grants': 1 * 60
 }
 
-const ProxyController = (client, registry, proxy) => {
+const ProxyController = (client, registry) => {
+  const proxy = createProxyServer()
+
+  proxy.on('proxyRes', (proxyRes, req, res) => {
+    var body = [];
+    proxyRes.on('data', function (chunk) {
+      body.push(chunk);
+    });
+
+    proxyRes.on('end', function () {
+      res.rawBody = Buffer.concat(body).toString()
+    });
+  })
+
+  proxy.on('error', (err, req, res) => {
+    res.writeHead(500, {
+      'Content-Type': 'text/plain'
+    });
+    res.end('Something went wrong: ' + err.message);
+  })
+
   const httpAgent = new http.Agent({ keepAlive: true });
   const httpsAgent = new https.Agent({ keepAlive: true });
 

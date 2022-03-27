@@ -2,13 +2,10 @@ import Koa from "koa";
 import Subdomain from 'koa-subdomain';
 import cors from "@koa/cors";
 import { createClient } from 'redis';
-import httpProxy from 'http-proxy';
 import ChainRegistry from './chainRegistry/chainRegistry.js';
 import ChainRegistryController from './chainRegistry/chainRegistryController.js'
 import ProxyController from './proxy/proxyController.js'
 import StatusController from './status/statusController.js'
-
-const { createProxyServer } = httpProxy;
 
 (async () => {
   const REDIS_HOST = process.env.REDIS_HOST || 'redis'
@@ -28,27 +25,7 @@ const { createProxyServer } = httpProxy;
 
   app.use(cors());
 
-  const proxy = createProxyServer()
-
-  proxy.on('proxyRes', (proxyRes, req, res) => {
-    var body = [];
-    proxyRes.on('data', function (chunk) {
-      body.push(chunk);
-    });
-
-    proxyRes.on('end', function () {
-      res.rawBody = Buffer.concat(body).toString()
-    });
-  })
-
-  proxy.on('error', (err, req, res) => {
-    res.writeHead(500, {
-      'Content-Type': 'text/plain'
-    });
-    res.end('Something went wrong: ' + err.message);
-  })
-
-  const proxyController = ProxyController(client, registry, proxy)
+  const proxyController = ProxyController(client, registry)
   subdomain.use('rest', proxyController.routes('rest'));
   subdomain.use('rpc', proxyController.routes('rpc'));
 
