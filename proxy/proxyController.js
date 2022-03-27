@@ -1,5 +1,7 @@
 import compose from 'koa-compose'
 import pathMatch from "path-match";
+import http from 'http'
+import https from 'https'
 import koaCash from '../lib/koaCache.js';
 import safeStringify from 'fast-safe-stringify'
 
@@ -9,6 +11,9 @@ const CACHED_REQUESTS = {
 }
 
 const ProxyController = (client, registry, proxy) => {
+  const httpAgent = new http.Agent({ keepAlive: true });
+  const httpsAgent = new https.Agent({ keepAlive: true });
+
   const route = pathMatch({
     sensitive: false,
     strict: false,
@@ -85,6 +90,8 @@ const ProxyController = (client, registry, proxy) => {
     const chainName = ctx.state.chainName
     if (!chainName) return next()
 
+    const url = new URL(ctx.state.proxyUrl)
+
     return new Promise((resolve) => {
       const opts = {
         target: ctx.state.proxyUrl,
@@ -94,6 +101,7 @@ const ProxyController = (client, registry, proxy) => {
         xfwd: true,
         secure: false,
         followRedirects: true,
+        agent: url.protocol === 'https:' ? httpsAgent : httpAgent,
         headers: {
           'accept-encoding': '*;q=1,gzip=0'
         }
