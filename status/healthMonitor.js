@@ -7,8 +7,8 @@ import { timeStamp } from '../utils.js';
 import { MonitorQueue } from './monitorQueue.js';
 
 const ALLOWED_DELAY = 10 * 60
-const ALLOWED_ERRORS = 3
-const ERROR_COOLDOWN = 15 * 60
+const ALLOWED_ERRORS = 5
+const ERROR_COOLDOWN = 10 * 60
 const HEALTH_TIMEOUT = 3000
 
 function HealthMonitor() {
