@@ -38,6 +38,7 @@ function HealthMonitor() {
           const currentUrl = current[url.address];
           return await checkUrl(url, type, chain.chainId, { ...currentUrl });
         }));
+        if(!await client.exists('health:' + chain.chainId)) await client.json.set('health:' + chain.chainId, '$', {})
         await client.json.set('health:' + chain.chainId, '$.' + type, updated.reduce((sum, url) => {
           if (!url)
             return sum;
@@ -56,12 +57,9 @@ function HealthMonitor() {
           retry: { limit: 1 },
           agent: agent
         });
-        const { timings, body } = response;
-        const data = JSON.parse(body);
-        return buildUrl(type, chainId, url, currentUrl, data, timings.phases.total);
+        return buildUrl(type, chainId, url, currentUrl, response);
       } catch (error) {
-        const { timings, message } = error;
-        return buildUrl(type, chainId, url, currentUrl, undefined, timings.phases.total, message);
+        return buildUrl(type, chainId, url, currentUrl, undefined, error);
       }
     };
     return queue.add(request, { address: url.address });
@@ -71,18 +69,26 @@ function HealthMonitor() {
     return type === 'rest' ? 'blocks/latest' : 'block';
   }
 
-  function buildUrl(type, chainId, url, currentUrl, data, responseTime, error) {
+  function buildUrl(type, chainId, url, currentUrl, response, error) {
+    let timings, body, data
     let blockTime = currentUrl?.blockTime
     let blockHeight = currentUrl?.blockHeight || 0;
+    let finalAddress = currentUrl?.finalAddress
     if (!error) {
+      ({ timings, body } = response)
+      data = JSON.parse(body);
+      finalAddress = response.url && new URL(response.url).origin;
       ({ error, blockTime, blockHeight } = checkHeader(type, data, chainId));
+    }else{
+      ({ timings } = error)
     }
+    const responseTime = timings?.phases?.total
 
     let { lastError, lastErrorAt, available } = currentUrl;
     let errorCount = currentUrl.errorCount || 0;
     if (error) {
       errorCount++;
-      lastError = error;
+      lastError = error.message;
       lastErrorAt = Date.now();
     } else if (errorCount > 0) {
       const currentTime = Date.now();
@@ -97,15 +103,16 @@ function HealthMonitor() {
       nowAvailable = !error || !!currentUrl.available;
     }
     if (available && !nowAvailable) {
-      timeStamp('Removing', chainId, type, url.address, error);
+      timeStamp('Removing', chainId, type, url.address, error.message);
     } else if (!available && nowAvailable) {
       timeStamp('Adding', chainId, type, url.address);
     } else if (available && error) {
-      timeStamp('Failed', chainId, type, url.address, error);
+      timeStamp('Failed', chainId, type, url.address, error.message);
     }
 
     return {
       url,
+      finalAddress,
       lastError,
       lastErrorAt,
       errorCount,

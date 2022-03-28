@@ -35,7 +35,11 @@ const ChainApis = (client, chainId, apis) => {
     })
     return urls.sort((a, b) => {
       return a.responseTime - b.responseTime
-    }).map(el => el.url);
+    }).map(el => {
+      const url = {...el.url}
+      url.address = el.finalAddress || url.address
+      return url
+    });
   }
 
   async function current(type) {
