@@ -8,17 +8,9 @@ RUN npm install
 RUN npm install pm2 -g
 COPY . ./
 
-ARG REGISTRY_URL=https://github.com/cosmos/chain-registry
-ENV REGISTRY_URL=${REGISTRY_URL}
-RUN git clone ${REGISTRY_URL} /usr/src/chain-registry
-
-ARG REGISTRY_BRANCH=master
-ENV REGISTRY_BRANCH=${REGISTRY_BRANCH}
-RUN cd /usr/src/chain-registry && git checkout ${REGISTRY_BRANCH}
-
-ARG REGISTRY_REFRESH=1800
-ENV REGISTRY_REFRESH=${REGISTRY_REFRESH}
-
 EXPOSE 3000
 
-CMD ["pm2-runtime", "proxy.js"]
+ENV APP_NAME=app
+ENV APP_COUNT=1
+
+CMD pm2-runtime ${APP_NAME}.js --instances $APP_COUNT

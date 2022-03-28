@@ -20,6 +20,13 @@
     "lodash": "^4.17.21",
     "p-queue": "^7.2.0",
     "path-match": "^1.2.4",
-    "uuid": "^8.3.2"
+    "redis": "^4.0.4",
+    "uuid": "^8.3.2",
+    "bytes": "^3.1.0",
+    "compressible": "^2.0.18",
+    "fast-safe-stringify": "^2.0.7",
+    "get-stream": "^5.1.0",
+    "is-stream": "^2.0.0",
+    "koa-is-json": "^1.0.0"
   }
 }
