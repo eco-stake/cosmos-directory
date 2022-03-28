@@ -1,6 +1,8 @@
 import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
+import http from 'http'
+import https from 'https'
 import { timeStamp } from '../utils.js';
 import { MonitorQueue } from './monitorQueue.js';
 
@@ -10,6 +12,10 @@ const ERROR_COOLDOWN = 15 * 60
 const HEALTH_TIMEOUT = 3000
 
 function HealthMonitor() {
+  const agent = {
+    http: new http.Agent({ keepAlive: true }),
+    https: new https.Agent({ keepAlive: true })
+  }
   const queue = new PQueue({ concurrency: 20, queueClass: MonitorQueue });
 
   function pending(address) {
@@ -47,7 +53,8 @@ function HealthMonitor() {
       try {
         const response = await got.get(url.address + '/' + urlPath(type), {
           timeout: { request: HEALTH_TIMEOUT },
-          retry: { limit: 1 }
+          retry: { limit: 1 },
+          agent: agent
         });
         const { timings, body } = response;
         const data = JSON.parse(body);
