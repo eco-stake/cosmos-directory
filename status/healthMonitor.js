@@ -78,7 +78,8 @@ function HealthMonitor() {
     if (!error) {
       ({ timings, body } = response)
       data = JSON.parse(body);
-      finalAddress = new URL(response.url).href.replace(urlPath(type), '').replace(/\/$|$/, '/');
+      const regex = new RegExp(`${urlPath(type)}/?$`)
+      finalAddress = new URL(response.url).href.replace(regex, '').replace(/\/$|$/, '/');
       ({ error, blockTime, blockHeight } = checkHeader(type, data, chainId));
     }else{
       ({ timings } = error)
