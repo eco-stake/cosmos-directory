@@ -10,7 +10,7 @@ const ChainApis = (client, chainId, apis) => {
   async function bestAddress(type) {
     const urls = await bestUrls(type).then(urls => urls.slice(0, BEST_NODE_COUNT))
     const best = _.sample(urls)
-    return best && best.address.replace(/\/$|$/, '/');
+    return best && best.address;
   }
 
   async function bestUrls(type) {

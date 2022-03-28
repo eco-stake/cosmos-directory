@@ -52,7 +52,8 @@ function HealthMonitor() {
   function checkUrl(url, type, chainId, currentUrl) {
     const request = async () => {
       try {
-        const response = await got.get(url.address + '/' + urlPath(type), {
+        const address = url.address.replace(/\/$|$/, '/')
+        const response = await got.get(address + urlPath(type), {
           timeout: { request: HEALTH_TIMEOUT },
           retry: { limit: 1 },
           agent: agent
@@ -77,7 +78,7 @@ function HealthMonitor() {
     if (!error) {
       ({ timings, body } = response)
       data = JSON.parse(body);
-      finalAddress = response.url && new URL(response.url).origin;
+      finalAddress = new URL(response.url).href.replace(urlPath(type), '').replace(/\/$|$/, '/');
       ({ error, blockTime, blockHeight } = checkHeader(type, data, chainId));
     }else{
       ({ timings } = error)
