@@ -142,7 +142,8 @@ function HealthMonitor() {
 
     let blockHeight = parseInt(header.height);
 
-    return { blockTime, blockHeight, error: error };
+    if(error) error = new Error(error)
+    return { blockTime, blockHeight, error };
   }
 
   return {
