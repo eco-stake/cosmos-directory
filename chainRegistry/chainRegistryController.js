@@ -6,7 +6,8 @@ function ChainRegistryController(registry) {
     const { chain_name, network_type, pretty_name, chain_id } = chain.chain;
     const baseAsset = chain.assets && chain.assets[0];
     return {
-      directory: chain.directory,
+      path: chain.path,
+      directory: chain.path,
       chain_name,
       network_type,
       pretty_name,
@@ -37,7 +38,7 @@ function ChainRegistryController(registry) {
     router.get('/:chain/:dataset', async (ctx, next) => {
       const chain = await registry.getChain(ctx.params.chain);
       let dataset = ctx.params.dataset.replace(/\.[^.]*$/,'')
-      dataset = ['directory'].includes(dataset) ? undefined : dataset
+      dataset = ['path'].includes(dataset) ? undefined : dataset
       renderJson(ctx, chain && dataset && chain.data[dataset]);
     });
 

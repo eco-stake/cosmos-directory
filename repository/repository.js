@@ -37,7 +37,7 @@ function Repository(client, url, branch, opts) {
       return sum
     }, {})
     return {
-      directory: dir,
+      path: dir,
       ...data
     };
   }
@@ -68,7 +68,7 @@ function Repository(client, url, branch, opts) {
       return data
     }, {}));
 
-    await client.json.set([name, 'directories'].join(':'), '$', _.compact(allData).map(el => el.directory))
+    await client.json.set([name, 'paths'].join(':'), '$', _.compact(allData).map(el => el.path))
   }
 
   return {
