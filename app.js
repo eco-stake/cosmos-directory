@@ -1,21 +1,14 @@
 import Koa from "koa";
 import Subdomain from 'koa-subdomain';
 import cors from "@koa/cors";
-import { createClient } from 'redis';
 import ChainRegistry from './chainRegistry/chainRegistry.js';
 import ChainRegistryController from './chainRegistry/chainRegistryController.js'
 import ProxyController from './proxy/proxyController.js'
 import StatusController from './status/statusController.js'
+import { redisClient } from "./redisClient.js";
 
 (async () => {
-  const REDIS_HOST = process.env.REDIS_HOST || 'redis'
-  const REDIS_PORT = process.env.REDIS_PORT || 6379
-
-  const client = createClient({
-    url: `redis://${REDIS_HOST}:${REDIS_PORT}`
-  });
-  client.on('error', (err) => console.log('Redis Client Error', err));
-  await client.connect();
+  const client = await redisClient();
 
   const registry = ChainRegistry(client)
 

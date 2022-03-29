@@ -1,7 +1,7 @@
-import { createClient } from 'redis';
 import ChainRegistry from './chainRegistry/chainRegistry.js';
 import Repository from './repository/repository.js';
 import HealthMonitor from './status/healthMonitor.js';
+import { redisClient } from "./redisClient.js";
 
 const url = process.env.REGISTRY_URL
 const branch = process.env.REGISTRY_BRANCH
@@ -26,13 +26,7 @@ async function queueHealthCheck(client, registry, health) {
 }
 
 (async () => {
-  const client = createClient({
-    url: 'redis://redis:6379'
-  });
-
-  client.on('error', (err) => console.log('Redis Client Error', err));
-
-  await client.connect();
+  const client = await redisClient();
 
   const health = HealthMonitor()
   const chainRepo = Repository(client, url, branch, { exclude: ['testnets'] })
