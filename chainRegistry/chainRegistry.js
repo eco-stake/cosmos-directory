@@ -1,6 +1,6 @@
-import Chain from '../chain/chain.js'
+import Chain from './chain.js'
 
-const ChainRegistry = (client) => {
+function ChainRegistry(client) {
   async function paths() {
     if (!await client.exists('chain-registry:paths')) {
       return []
@@ -8,7 +8,7 @@ const ChainRegistry = (client) => {
 
     return await client.json.get('chain-registry:paths', '$')
   }
-   
+
   async function getChains() {
     const names = await paths()
     return Promise.all(names.map(async name => {
@@ -22,7 +22,8 @@ const ChainRegistry = (client) => {
     }
 
     const data = await client.json.get('chain-registry:' + name, '$')
-    if(!data.chain) return
+    if (!data.chain)
+      return
 
     return Chain(client, data)
   }

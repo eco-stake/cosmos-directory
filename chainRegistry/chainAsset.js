@@ -1,4 +1,4 @@
-const ChainAsset = (data) => {
+function ChainAsset(data) {
   const { name, display, symbol, coingecko_id } = data
   const base = data.denom_units.find(el => el.denom === data.base)
   const token = data.denom_units.find(el => el.denom === data.display)

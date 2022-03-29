@@ -1,10 +1,10 @@
 import ChainApis from "./chainApis.js";
 import ChainAsset from './chainAsset.js'
 
-const Chain = (client, data) => {
-  const { chain, assetlist } = data
-  const apis = ChainApis(client, chain.chain_id, chain.apis || {})
-  const assets = assetlist && assetlist.assets.map(el => ChainAsset(el))
+function Chain(client, data) {
+  const { chain, assetlist } = data;
+  const apis = ChainApis(client, chain.chain_id, chain.apis || {});
+  const assets = assetlist && assetlist.assets.map(el => ChainAsset(el));
 
   return {
     chainId: chain.chain_id,
@@ -14,7 +14,7 @@ const Chain = (client, data) => {
     assets,
     data,
     ...data
-  }
+  };
 }
 
 export default Chain
