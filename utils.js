@@ -1,3 +1,9 @@
+export function debugLog(...args) {
+  if(process.env.DEBUG === '1'){
+    timeStamp(...args)
+  }
+}
+
 export function timeStamp(...args) {
   console.log('[' + new Date().toISOString().substring(11, 23) + '] -', ...args);
 }

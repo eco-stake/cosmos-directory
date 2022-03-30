@@ -4,6 +4,7 @@ services:
   app:
     build: .
     environment:
+      - DEBUG=1
       - APP_NAME=app
       - APP_COUNT=3
     ports:
@@ -16,6 +17,7 @@ services:
   worker:
     build: .
     environment:
+      - DEBUG=1
       - APP_NAME=worker
       - HEALTH_REFRESH=10
       - CHAIN_URL=https://github.com/eco-stake/chain-registry
