@@ -4,13 +4,52 @@ import Agent from 'agentkeepalive'
 import httpProxy from 'http-proxy';
 import safeStringify from 'fast-safe-stringify'
 import koaCash from '../lib/koaCache.js';
+import { debugLog } from '../utils.js';
 
 const { createProxyServer } = httpProxy;
 
-const CACHED_REQUESTS = {
-  'cosmos/staking/v1beta1/validators': 5 * 60,
-  'cosmos/authz/v1beta1/grants': 1 * 60
-}
+const CACHED_REQUESTS = [ 
+  {
+    path: 'cosmos/staking/v1beta1/validators',
+    maxAge: 5 * 60
+  },
+  {
+    path: 'cosmos/authz/v1beta1/grants',
+    maxAge: 1 * 60
+  },
+  {
+    path: new RegExp("cosmos/staking/v1beta1/delegations/[\\w\\d]*$"),
+    maxAge: 30
+  },
+  {
+    path: new RegExp("cosmos/bank/v1beta1/balances/[\\w\\d]*$"),
+    maxAge: 30
+  },
+  {
+    path: new RegExp("cosmos/distribution/v1beta1/delegators/[\\w\\d]*/rewards$"),
+    maxAge: 30
+  },
+  {
+    path: new RegExp("/cosmos/staking/v1beta1/validators/[\\w\\d]*/delegations$"),
+    maxAge: 60
+  },
+  {
+    path: new RegExp("/cosmos/distribution/v1beta1/delegators/[\\w\\d]*/withdraw_address$"),
+    maxAge: 5 * 60
+  },
+  {
+    path: 'osmosis/mint/v1beta1/params',
+    maxAge: 60 * 60
+  },
+  {
+    path: 'osmosis/epochs/v1beta1/epochs',
+    maxAge: 5 * 60
+  },
+  {
+    path: 'osmosis/mint/v1beta1/epoch_provisions',
+    maxAge: 5 * 60
+  }
+ ]
 
 const ProxyController = (client, registry) => {
   const proxy = createProxyServer()
@@ -101,9 +140,15 @@ const ProxyController = (client, registry) => {
   async function serveCache(ctx, next){
     let { path } = ctx.request;
     path = path.split('/').slice(2).join('/')
-    if(CACHED_REQUESTS.hasOwnProperty(path)){
-      const maxAge = CACHED_REQUESTS[path]
-      if (await ctx.cashed(maxAge)) return
+    const match = CACHED_REQUESTS.find(el => path.match(el.path))
+    if(match){
+      if (await ctx.cashed(match.maxAge)){
+        debugLog('Using cache', path)
+        return
+      }
+      debugLog('Caching', path)
+    }else{
+      debugLog('Skipping cache', path)
     }
     return next()
   }
