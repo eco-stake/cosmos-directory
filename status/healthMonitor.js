@@ -1,8 +1,7 @@
 import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
-import http from 'http'
-import https from 'https'
+import Agent from 'agentkeepalive'
 import { timeStamp } from '../utils.js';
 import { MonitorQueue } from './monitorQueue.js';
 
@@ -13,8 +12,8 @@ const HEALTH_TIMEOUT = 3000
 
 function HealthMonitor() {
   const agent = {
-    http: new http.Agent({ keepAlive: true }),
-    https: new https.Agent({ keepAlive: true })
+    http: new Agent(),
+    https: new Agent.HttpsAgent()
   }
   const queue = new PQueue({ concurrency: 20, queueClass: MonitorQueue });
 
