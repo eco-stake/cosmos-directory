@@ -1,7 +1,6 @@
 import compose from 'koa-compose'
 import pathMatch from "path-match";
-import http from 'http'
-import https from 'https'
+import Agent from 'agentkeepalive'
 import httpProxy from 'http-proxy';
 import safeStringify from 'fast-safe-stringify'
 import koaCash from '../lib/koaCache.js';
@@ -34,8 +33,8 @@ const ProxyController = (client, registry) => {
     res.end('Something went wrong: ' + err.message);
   })
 
-  const httpAgent = new http.Agent({ keepAlive: true });
-  const httpsAgent = new https.Agent({ keepAlive: true });
+  const httpAgent = new Agent();
+  const httpsAgent = new Agent.HttpsAgent();
 
   const route = pathMatch({
     sensitive: false,
