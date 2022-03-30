@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import Validator from './validator.js'
 
 function ValidatorRegistry(client) {
@@ -11,9 +12,10 @@ function ValidatorRegistry(client) {
 
   async function getValidators() {
     const names = await paths()
-    return Promise.all(names.map(async (name) => {
+    const validators = await Promise.all(names.map(async (name) => {
       return await getValidator(name)
     }))
+    return _.compact(validators)
   }
 
   async function getValidator(name) {
