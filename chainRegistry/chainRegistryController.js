@@ -25,9 +25,11 @@ function ChainRegistryController(registry) {
 
     router.get('/', async (ctx, next) => {
       const chains = await registry.getChains()
-      renderJson(ctx, chains.map(chain => {
-        return summary(chain);
-      }));
+      renderJson(ctx, {
+        chains: chains.map(chain => {
+          return summary(chain);
+        })
+      });
     });
 
     router.get('/:chain', async (ctx, next) => {

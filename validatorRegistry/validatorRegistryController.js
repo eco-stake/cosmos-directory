@@ -31,9 +31,11 @@ function ValidatorRegistryController(registry) {
 
     router.get('/', async (ctx, next) => {
       const validators = await registry.getValidators()
-      renderJson(ctx, validators.map(validator => {
-        return summary(validator);
-      }));
+      renderJson(ctx, {
+        validators: validators.map(validator => {
+          return summary(validator);
+        })
+      });
     });
 
     router.get('/chains/:chain', async (ctx, next) => {
