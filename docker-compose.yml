@@ -7,6 +7,8 @@ services:
       - DEBUG=1
       - APP_NAME=app
       - APP_COUNT=3
+    env_file:
+      - .env
     ports:
       - '3000:3000'
     volumes:
@@ -26,6 +28,8 @@ services:
       - VALIDATOR_URL=https://github.com/eco-stake/validator-registry
       - VALIDATOR_BRANCH=master
       - VALIDATOR_REFRESH=60
+    env_file:
+      - .env
     volumes:
       - .:/usr/src/app
       - node_modules:/usr/src/app/node_modules

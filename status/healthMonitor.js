@@ -8,14 +8,14 @@ import { MonitorQueue } from './monitorQueue.js';
 const ALLOWED_DELAY = 10 * 60
 const ALLOWED_ERRORS = 5
 const ERROR_COOLDOWN = 10 * 60
-const HEALTH_TIMEOUT = 3000
+const HEALTH_TIMEOUT = 5000
 
 function HealthMonitor() {
   const agent = {
-    http: new Agent({ maxSockets: 20 }),
-    https: new Agent.HttpsAgent({ maxSockets: 20 })
+    http: new Agent({ maxSockets: 1 }),
+    https: new Agent.HttpsAgent({ maxSockets: 1 })
   }
-  const queue = new PQueue({ concurrency: 20, queueClass: MonitorQueue });
+  const queue = new PQueue({ concurrency: 10, queueClass: MonitorQueue });
 
   function pending(address) {
     return queue.sizeBy({ address }) > 0;
