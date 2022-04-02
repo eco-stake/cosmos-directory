@@ -8,6 +8,7 @@ import ValidatorRegistryController from './validatorRegistry/validatorRegistryCo
 import ProxyController from './proxy/proxyController.js'
 import StatusController from './status/statusController.js'
 import { redisClient } from "./redisClient.js";
+import Router from "koa-router";
 
 (async () => {
   const client = await redisClient();
@@ -28,10 +29,17 @@ import { redisClient } from "./redisClient.js";
   subdomain.use('registry', ChainRegistryController(chainRegistry).routes()); // deprecated 
   subdomain.use('chains', ChainRegistryController(chainRegistry).routes());
   subdomain.use('validators', ValidatorRegistryController(validatorRegistry).routes());
+  subdomain.use('status', StatusController(client, chainRegistry).routes());
 
   app.use(subdomain.routes());
 
-  app.use(StatusController(client, chainRegistry).routes());
+  const router = new Router()
+  router.get('/status', async (ctx, next) => {
+    ctx.body = {
+      status: 'ok'
+    }
+  });
+  app.use(router.routes());
 
   app.listen(port);
   console.log(`listening on port ${port}`);

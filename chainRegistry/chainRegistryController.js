@@ -6,9 +6,9 @@ function ChainRegistryController(registry) {
     const { chain_name, network_type, pretty_name, chain_id } = chain.chain;
     const baseAsset = chain.assets && chain.assets[0];
     return {
+      name: chain_name,
       path: chain.path,
-      directory: chain.path, // deprecated
-      chain_name,
+      chain_name, 
       network_type,
       pretty_name,
       chain_id,
