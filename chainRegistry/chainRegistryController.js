@@ -3,7 +3,7 @@ import { renderJson } from '../utils.js';
 
 function ChainRegistryController(registry) {
   function summary(chain) {
-    const { chain_name, network_type, pretty_name, chain_id } = chain.chain;
+    const { chain_name, network_type, pretty_name, chain_id, status } = chain.chain;
     const baseAsset = chain.assets && chain.assets[0];
     return {
       name: chain_name,
@@ -12,7 +12,7 @@ function ChainRegistryController(registry) {
       network_type,
       pretty_name,
       chain_id,
-      status: chain.status,
+      status,
       symbol: baseAsset && baseAsset.symbol,
       coingecko_id: baseAsset && baseAsset.coingecko_id,
       image: baseAsset && baseAsset.image,
