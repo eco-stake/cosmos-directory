@@ -27,6 +27,16 @@ function Repository(client, url, branch, opts) {
     await git.checkout({ fs, dir: repoDir, ref: `origin/${branch}`, force: true });
   }
 
+  async function latestCommit(count) {
+    let commits = await git.log({
+      fs,
+      dir: repoDir,
+      ref: branch,
+      depth: count || 1,
+    })
+    return !count || count === 1 ? commits[0] : commits
+  }
+
   function buildData(dir) {
     const jsonFiles = fs.readdirSync(join(repoDir, dir)).filter(file => path.extname(file) === '.json');
     const data = jsonFiles.reduce((sum, filename) => {
@@ -69,6 +79,15 @@ function Repository(client, url, branch, opts) {
     }, {}));
 
     await client.json.set([name, 'paths'].join(':'), '$', _.compact(allData).map(el => el.path))
+
+    const commit = await latestCommit()
+    await client.json.set([name, 'commit'].join(':'), '$', commit)
+    
+    await client.json.set([name, 'repository'].join(':'), '$', {
+      name,
+      url,
+      branch
+    })
   }
 
   return {

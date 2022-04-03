@@ -24,8 +24,16 @@ function ChainRegistryController(registry) {
     const router = new Router();
 
     router.get('/', async (ctx, next) => {
+      const repository = await registry.repository()
+      const commit = await registry.commit()
       const chains = await registry.getChains()
       renderJson(ctx, {
+        repository: {
+          url: repository.url,
+          branch: repository.branch,
+          commit: commit.oid,
+          timestamp: commit.commit.author.timestamp
+        },
         chains: chains.map(chain => {
           return summary(chain);
         })

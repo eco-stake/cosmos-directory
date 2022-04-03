@@ -30,8 +30,16 @@ function ValidatorRegistryController(registry) {
     const router = new Router();
 
     router.get('/', async (ctx, next) => {
+      const repository = await registry.repository()
+      const commit = await registry.commit()
       const validators = await registry.getValidators()
       renderJson(ctx, {
+        repository: {
+          url: repository.url,
+          branch: repository.branch,
+          commit: commit.oid,
+          timestamp: commit.commit.author.timestamp
+        },
         validators: validators.map(validator => {
           return summary(validator);
         })

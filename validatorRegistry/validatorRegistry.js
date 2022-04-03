@@ -2,6 +2,18 @@ import _ from 'lodash'
 import Validator from './validator.js'
 
 function ValidatorRegistry(client) {
+  async function repository() {
+    if (!await client.exists('validator-registry:repository')) return {}
+
+    return await client.json.get('validator-registry:repository', '$')
+  }
+
+  async function commit() {
+    if (!await client.exists('validator-registry:commit')) return {}
+
+    return await client.json.get('validator-registry:commit', '$')
+  }
+
   async function paths() {
     if (!await client.exists('validator-registry:paths')) {
       return []
@@ -33,7 +45,9 @@ function ValidatorRegistry(client) {
   return {
     getValidators,
     getValidator,
-    paths
+    paths,
+    repository,
+    commit
   }
 }
 
