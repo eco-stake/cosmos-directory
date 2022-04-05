@@ -29,10 +29,7 @@ function HealthMonitor() {
         const urls = apis.apis[type] || [];
         const current = await apis.current(type);
         const updated = await Promise.all([...urls].map(async (url) => {
-          try {
-            url.address = url.address && new URL(url.address).href
-          } catch { return }
-          if (!url.address || pending(url.address)) return;
+          if (pending(url.address)) return;
 
           const currentUrl = current[url.address];
           return await checkUrl(url, type, chain.chainId, { ...currentUrl });
@@ -51,7 +48,7 @@ function HealthMonitor() {
   function checkUrl(url, type, chainId, currentUrl) {
     const request = async () => {
       try {
-        const address = url.address.replace(/\/$|$/, '/')
+        let address = new URL(url.address).href.replace(/\/$|$/, '/')
         const response = await got.get(address + urlPath(type), {
           timeout: { request: HEALTH_TIMEOUT },
           retry: { limit: 1 },
