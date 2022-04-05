@@ -13,6 +13,7 @@ function Repository(client, url, branch, opts) {
   const exclude = opts.exclude || []
 
   async function updateRepo() {
+    fs.rmSync(repoDir, {recursive: true})
     await git.clone({
       fs,
       http,
@@ -23,15 +24,15 @@ function Repository(client, url, branch, opts) {
       singleBranch: true,
       skipCheckout: true
     })
-    await git.fetch({ fs, http, dir: repoDir, ref: branch, url: url, singleBranch: true });
-    await git.checkout({ fs, dir: repoDir, ref: `origin/${branch}`, force: true });
+    await git.fetch({ fs, http, dir: repoDir, ref: branch, singleBranch: true });
+    await git.checkout({ fs, dir: repoDir, ref: branch, force: true });
   }
 
   async function latestCommit(count) {
     let commits = await git.log({
       fs,
       dir: repoDir,
-      ref: branch,
+      ref: `origin/${branch}`,
       depth: count || 1,
     })
     return !count || count === 1 ? commits[0] : commits
