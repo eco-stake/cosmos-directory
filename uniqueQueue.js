@@ -1,11 +1,11 @@
-export class MonitorQueue {
+export class UniqueQueue {
   constructor() {
     this._queue = [];
   }
 
   enqueue(run, options) {
     const runData = {
-      address: options.address,
+      identifier: options.identifier,
       run: run
     };
     return this._queue.push(runData);
@@ -21,6 +21,6 @@ export class MonitorQueue {
   }
 
   filter(options) {
-    return this._queue.filter(el => el.address === options.address);
+    return this._queue.filter(el => el.identifier === options.identifier);
   }
 }

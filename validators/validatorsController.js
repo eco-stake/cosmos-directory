@@ -2,7 +2,7 @@ import Router from 'koa-router';
 import _ from 'lodash';
 import { renderJson } from '../utils.js';
 
-function ValidatorRegistryController(registry) {
+function ValidatorsController(registry) {
   function summary(validator) {
     const { name } = validator
     const { identity } = validator.profile
@@ -14,16 +14,6 @@ function ValidatorRegistryController(registry) {
       identity,
       chains: chains
     };
-  }
-
-  function chain(chainName, validator){
-    const { profile } = validator
-    const chain = validator.chains.chains.find(el => el.name === chainName)
-    return {
-      path: validator.path,
-      ...profile,
-      ..._.omit(chain, 'name')
-    }
   }
 
   function routes() {
@@ -47,14 +37,11 @@ function ValidatorRegistryController(registry) {
     });
 
     router.get('/chains/:chain', async (ctx, next) => {
-      let validators = await registry.getValidators()
       let chainName = ctx.params.chain
-      validators = validators.filter(el => !!el.chains.chains.find(chain => chain.name === chainName))
+      let validators = await registry.getAllValidators(chainName)
       renderJson(ctx, {
         name: chainName,
-        validators: validators.map(validator => {
-          return chain(chainName, validator)
-        })
+        validators: _.shuffle(validators)
       });
     });
 
@@ -78,4 +65,4 @@ function ValidatorRegistryController(registry) {
   };
 }
 
-export default ValidatorRegistryController
+export default ValidatorsController

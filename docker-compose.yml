@@ -27,7 +27,7 @@ services:
       - CHAIN_REFRESH=60
       - VALIDATOR_URL=https://github.com/eco-stake/validator-registry
       - VALIDATOR_BRANCH=master
-      - VALIDATOR_REFRESH=60
+      - VALIDATOR_REFRESH=300
     env_file:
       - .env
     volumes:

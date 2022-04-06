@@ -1,7 +1,7 @@
 import Router from 'koa-router';
 import { renderJson } from '../utils.js';
 
-function ChainRegistryController(registry) {
+function ChainsController(registry) {
   function summary(chain) {
     const { chain_name, network_type, pretty_name, chain_id, status } = chain.chain;
     const baseAsset = chain.assets && chain.assets[0];
@@ -60,4 +60,4 @@ function ChainRegistryController(registry) {
   };
 }
 
-export default ChainRegistryController
+export default ChainsController

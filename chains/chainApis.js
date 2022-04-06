@@ -6,7 +6,7 @@ const BEST_RESPONSE_DIFF = 1
 const BEST_ERROR_DIFF = 5 * 60
 const IGNORE_ERROR_DIFF = 60 * 60
 
-function ChainApis(client, chainId, apis) {
+function ChainApis(client, path, apis) {
   async function bestAddress(type) {
     const urls = await bestUrls(type).then(urls => urls.slice(0, BEST_NODE_COUNT))
     const best = _.sample(urls)
@@ -46,10 +46,10 @@ function ChainApis(client, chainId, apis) {
   }
 
   async function current(type) {
-    if (!await client.exists('health:' + chainId)) {
+    if (!await client.exists('health:' + path)) {
       return {}
     }
-    const currentUrls = await client.json.get('health:' + chainId, '$')
+    const currentUrls = await client.json.get('health:' + path, '$')
     return currentUrls[type] || {}
   }
 

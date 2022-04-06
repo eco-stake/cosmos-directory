@@ -1,10 +1,10 @@
 import Koa from "koa";
 import Subdomain from 'koa-subdomain';
 import cors from "@koa/cors";
-import ChainRegistry from './chainRegistry/chainRegistry.js';
-import ChainRegistryController from './chainRegistry/chainRegistryController.js'
-import ValidatorRegistry from './validatorRegistry/validatorRegistry.js';
-import ValidatorRegistryController from './validatorRegistry/validatorRegistryController.js'
+import ChainRegistry from './chains/chainRegistry.js';
+import ChainsController from './chains/chainsController.js'
+import ValidatorRegistry from './validators/validatorRegistry.js';
+import ValidatorsController from './validators/validatorsController.js'
 import ProxyController from './proxy/proxyController.js'
 import StatusController from './status/statusController.js'
 import { redisClient } from "./redisClient.js";
@@ -26,9 +26,8 @@ import Router from "koa-router";
   subdomain.use('rest', proxyController.routes('rest'));
   subdomain.use('rpc', proxyController.routes('rpc'));
 
-  subdomain.use('registry', ChainRegistryController(chainRegistry).routes()); // deprecated 
-  subdomain.use('chains', ChainRegistryController(chainRegistry).routes());
-  subdomain.use('validators', ValidatorRegistryController(validatorRegistry).routes());
+  subdomain.use('chains', ChainsController(chainRegistry).routes());
+  subdomain.use('validators', ValidatorsController(validatorRegistry).routes());
   subdomain.use('status', StatusController(client, chainRegistry).routes());
 
   app.use(subdomain.routes());

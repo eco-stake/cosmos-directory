@@ -13,7 +13,7 @@ function Repository(client, url, branch, opts) {
   const exclude = opts.exclude || []
 
   async function updateRepo() {
-    fs.rmSync(repoDir, {recursive: true})
+    if(fs.existsSync(repoDir)) fs.rmSync(repoDir, {recursive: true})
     await git.clone({
       fs,
       http,

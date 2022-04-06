@@ -20,18 +20,18 @@ function ChainRegistry(client) {
   }
 
   async function getChains() {
-    const names = await paths()
-    return Promise.all(names.map(async name => {
-      return await getChain(name)
+    const chainPaths = await paths()
+    return Promise.all(chainPaths.map(async path => {
+      return await getChain(path)
     }))
   }
 
-  async function getChain(name) {
-    if (!await client.exists('chain-registry:' + name)) {
+  async function getChain(path) {
+    if (!await client.exists('chain-registry:' + path)) {
       return
     }
 
-    const data = await client.json.get('chain-registry:' + name, '$')
+    const data = await client.json.get('chain-registry:' + path, '$')
     if (!data.chain)
       return
 

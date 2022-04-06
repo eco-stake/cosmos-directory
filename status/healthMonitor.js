@@ -2,8 +2,8 @@ import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
 import Agent from 'agentkeepalive'
-import { timeStamp } from '../utils.js';
-import { MonitorQueue } from './monitorQueue.js';
+import { timeStamp, debugLog } from '../utils.js';
+import { UniqueQueue } from '../uniqueQueue.js';
 
 const ALLOWED_DELAY = 10 * 60
 const ALLOWED_ERRORS = 5
@@ -15,7 +15,7 @@ function HealthMonitor() {
     http: new Agent({ maxSockets: 1 }),
     https: new Agent.HttpsAgent({ maxSockets: 1 })
   }
-  const queue = new PQueue({ concurrency: 10, queueClass: MonitorQueue });
+  const queue = new PQueue({ concurrency: 10, queueClass: UniqueQueue });
 
   function pending(address) {
     return queue.sizeBy({ address }) > 0;
@@ -32,10 +32,10 @@ function HealthMonitor() {
           if (pending(url.address)) return;
 
           const currentUrl = current[url.address];
-          return await checkUrl(url, type, chain.chainId, { ...currentUrl });
+          return await checkUrl(url, type, chain, { ...currentUrl });
         }));
-        if(!await client.exists('health:' + chain.chainId)) await client.json.set('health:' + chain.chainId, '$', {})
-        await client.json.set('health:' + chain.chainId, '$.' + type, updated.reduce((sum, url) => {
+        if(!await client.exists('health:' + chain.path)) await client.json.set('health:' + chain.path, '$', {})
+        await client.json.set('health:' + chain.path, '$.' + type, updated.reduce((sum, url) => {
           if (!url)
             return sum;
           sum[url.url.address] = url;
@@ -43,9 +43,10 @@ function HealthMonitor() {
         }, {}));
       }));
     }));
+    debugLog('Health checks complete')
   }
 
-  function checkUrl(url, type, chainId, currentUrl) {
+  function checkUrl(url, type, chain, currentUrl) {
     const request = async () => {
       try {
         let address = new URL(url.address).href.replace(/\/$|$/, '/')
@@ -54,19 +55,19 @@ function HealthMonitor() {
           retry: { limit: 1 },
           agent: agent
         });
-        return buildUrl(type, chainId, url, currentUrl, response);
+        return buildUrl(type, chain, url, currentUrl, response);
       } catch (error) {
-        return buildUrl(type, chainId, url, currentUrl, undefined, error);
+        return buildUrl(type, chain, url, currentUrl, undefined, error);
       }
     };
-    return queue.add(request, { address: url.address });
+    return queue.add(request, { identifier: url.address });
   }
 
   function urlPath(type) {
     return type === 'rest' ? 'blocks/latest' : 'block';
   }
 
-  function buildUrl(type, chainId, url, currentUrl, response, error) {
+  function buildUrl(type, chain, url, currentUrl, response, error) {
     let timings, body, data
     let blockTime = currentUrl?.blockTime
     let blockHeight = currentUrl?.blockHeight || 0;
@@ -76,7 +77,7 @@ function HealthMonitor() {
       data = JSON.parse(body);
       const regex = new RegExp(`${urlPath(type)}/?$`)
       finalAddress = new URL(response.url).href.replace(regex, '').replace(/\/$|$/, '/');
-      ({ error, blockTime, blockHeight } = checkHeader(type, data, chainId));
+      ({ error, blockTime, blockHeight } = checkHeader(type, data, chain.chainId));
     }else{
       ({ timings } = error)
     }
@@ -101,11 +102,11 @@ function HealthMonitor() {
       nowAvailable = !error || !!currentUrl.available;
     }
     if (available && !nowAvailable) {
-      timeStamp('Removing', chainId, type, url.address, error.message);
+      timeStamp('Removing', chain.path, type, url.address, error.message);
     } else if (!available && nowAvailable) {
-      timeStamp('Adding', chainId, type, url.address);
+      timeStamp('Adding', chain.path, type, url.address);
     } else if (available && error) {
-      timeStamp('Failed', chainId, type, url.address, error.message);
+      timeStamp('Failed', chain.path, type, url.address, error.message);
     }
 
     return {
