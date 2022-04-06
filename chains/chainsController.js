@@ -2,9 +2,9 @@ import Router from 'koa-router';
 import { renderJson } from '../utils.js';
 
 function ChainsController(registry) {
-  function summary(chain) {
+  async function summary(chain) {
     const { chain_name, network_type, pretty_name, chain_id, status } = chain.chain;
-    const baseAsset = chain.assets && chain.assets[0];
+    const baseAsset = chain.baseAsset()
     return {
       name: chain_name,
       path: chain.path,
@@ -16,6 +16,7 @@ function ChainsController(registry) {
       symbol: baseAsset && baseAsset.symbol,
       coingecko_id: baseAsset && baseAsset.coingecko_id,
       image: baseAsset && baseAsset.image,
+      height: await chain.getBlockHeight(),
       apis: chain.apis
     };
   }
@@ -34,15 +35,15 @@ function ChainsController(registry) {
           commit: commit.oid,
           timestamp: commit.commit.author.timestamp
         },
-        chains: chains.map(chain => {
-          return summary(chain);
-        })
+        chains: await Promise.all(chains.map(async chain => {
+          return await summary(chain);
+        }))
       });
     });
 
     router.get('/:chain', async (ctx, next) => {
       const chain = await registry.getChain(ctx.params.chain);
-      renderJson(ctx, chain && summary(chain));
+      renderJson(ctx, chain && await summary(chain));
     });
 
     router.get('/:chain/:dataset', async (ctx, next) => {

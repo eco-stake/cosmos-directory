@@ -7,6 +7,14 @@ function Chain(client, data) {
   const assets = assetlist && assetlist.assets.map(el => ChainAsset(el));
   const apis = ChainApis(client, path, chain.apis || {});
 
+  function getBlockHeight(){
+    return apis.bestHeight()
+  }
+
+  function baseAsset(){
+    return assets && assets[0]
+  }
+
   return {
     path: path,
     chainId: chain.chain_id,
@@ -15,7 +23,9 @@ function Chain(client, data) {
     assets,
     apis,
     data,
-    ...data
+    ...data,
+    getBlockHeight,
+    baseAsset
   };
 }
 

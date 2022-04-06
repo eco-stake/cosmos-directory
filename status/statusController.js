@@ -8,25 +8,29 @@ const StatusController = (client, registry) => {
     return {
       chains: await Promise.all(chains.map(async chain => {
         const status = await chainStatus(chain)
-        return _.pick(status, ['name', 'available', 'rpc.available', 'rpc.best', 'rest.available', 'rest.best'])
+        return _.pick(status, ['name', 'height', 'available', 'rpc.available', 'rpc.height', 'rpc.best', 'rest.available', 'rest.height', 'rest.best'])
       }))
     }
   }
 
   const chainStatus = async (chain) => {
     const apis = chain.apis
+    const data = {
+      name: chain.name,
+      height: await apis.bestHeight(),
+    }
     return ['rpc', 'rest'].reduce(async (asyncSum, type) => {
       const sum = await asyncSum
       const available = await apis.bestAddress(type)
-      sum.name = chain.name
       sum.available = sum.available === false ? false : !!available
       sum[type] = {
         available: !!available,
+        height: await apis.bestHeight(type),
         best: await apis.bestUrls(type),
         current: await apis.current(type)
       }
       return sum
-    }, {})
+    }, data)
   }
 
   function routes() {

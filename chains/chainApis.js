@@ -13,6 +13,18 @@ function ChainApis(client, path, apis) {
     return best && best.address
   }
 
+  async function bestHeight(type) {
+    let urls
+    if(type){
+      urls = Object.values(await current(type))
+    }else{
+      urls = Object.values(await current()).reduce((sum, urls) => {
+        return sum.concat(Object.values(urls))
+      }, [])
+    }
+    return Math.max(...urls.map(el => el.blockHeight).filter(Number.isFinite))
+  }
+
   async function bestUrls(type) {
     let urls = Object.values(await current(type)).filter(el => el.available)
     const bestHeight = Math.max(...urls.map(el => el.blockHeight).filter(Number.isFinite))
@@ -50,12 +62,13 @@ function ChainApis(client, path, apis) {
       return {}
     }
     const currentUrls = await client.json.get('health:' + path, '$')
-    return currentUrls[type] || {}
+    return type ? (currentUrls[type] || {}) : currentUrls
   }
 
   return {
     bestAddress,
     bestUrls,
+    bestHeight,
     apis,
     current
   }
