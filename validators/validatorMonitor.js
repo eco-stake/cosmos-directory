@@ -106,7 +106,7 @@ function ValidatorMonitor() {
     if (nextKey) searchParams.append("pagination.key", nextKey);
     try {
       return await got.get(url +
-        "/cosmos/staking/v1beta1/validators?" +
+        "cosmos/staking/v1beta1/validators?" +
         searchParams.toString(),
         {
           timeout: { request: TIMEOUT },
