@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import Validator from './validator.js'
+import RegistryValidator from './registryValidator.js'
 
 function ValidatorRegistry(client) {
   async function repository() {
@@ -24,31 +24,28 @@ function ValidatorRegistry(client) {
 
   async function getAllValidators(chainName) {
     const chainValidators = (await getChainValidators(chainName)).validators || {}
-    const registryValidators = (await getValidators()).filter(el => !!el.chains.chains.find(chain => chain.name === chainName)).reduce((sum, validator) => {
-      const { profile, path } = validator
-      const chain = validator.chains.chains.find(el => el.name === chainName)
-      sum[chain.address] = {
-        path,
-        ...profile,
-        ..._.omit(chain, 'name')
-      }
+    const registryValidators = (await getRegistryValidators()).reduce((sum, registryValidator) => {
+      const validator = registryValidator.validatorForChain(chainName, chainValidators)
+      if(!validator) return sum
+
+      sum[validator.address] = validator
       return sum
     }, {})
     const addresses = [...new Set([...Object.keys(chainValidators), ...Object.keys(registryValidators)])]
     return addresses.map(address => {
-      const chainData = chainValidators[address] || {}
-      const registryData = registryValidators[address] || {}
-      const { path, name } = registryData
-      const moniker = chainData.description?.moniker
-      const identity = chainData.description?.identity || registryData.identity
-      return {
-        path,
-        name,
-        moniker,
-        identity,
-        address,
-        ...chainData,
-        ...registryData
+      const registryData = registryValidators[address]
+      if(registryData){
+        return registryData
+      }else{
+        const chainData = chainValidators[address] || {}
+        const moniker = chainData.description?.moniker
+        const identity = chainData.description?.identity
+        return {
+          moniker,
+          identity,
+          address,
+          ...chainData
+        }
       }
     })
   }
@@ -61,30 +58,44 @@ function ValidatorRegistry(client) {
     return await client.json.get('validators:' + chainName, '$')
   }
 
-  async function getValidators() {
+  async function getChainValidator(chainName, address) {
+    if (!await client.exists('validators:' + chainName)) {
+      return {}
+    }
+
+    return await client.json.get('validators:' + chainName, {
+      path: [
+        '.validators.' + address,
+      ]
+    })
+  }
+
+  async function getRegistryValidators() {
     const names = await paths()
-    const validators = await Promise.all(names.map(async (name) => {
-      return await getValidator(name)
+    const validators = await Promise.all(names.map(async (path) => {
+      return await getRegistryValidator(path)
     }))
     return _.compact(validators)
   }
 
-  async function getValidator(name) {
-    if (!await client.exists('validator-registry:' + name)) {
+  async function getRegistryValidator(path) {
+    if (!await client.exists('validator-registry:' + path)) {
       return
     }
 
-    const data = await client.json.get('validator-registry:' + name, '$')
+    const data = await client.json.get('validator-registry:' + path, '$')
     if (!data.profile)
       return
 
-    return Validator(data)
+    return RegistryValidator(data)
   }
 
   return {
     getAllValidators,
-    getValidators,
-    getValidator,
+    getChainValidators,
+    getChainValidator,
+    getRegistryValidators,
+    getRegistryValidator,
     paths,
     repository,
     commit

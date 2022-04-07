@@ -2,10 +2,10 @@ import Router from 'koa-router';
 import { renderJson } from '../utils.js';
 
 function ChainsController(registry) {
-  async function summary(chain) {
+  async function chainResponse(chain, summarize) {
     const { chain_name, network_type, pretty_name, chain_id, status } = chain.chain;
     const baseAsset = chain.baseAsset()
-    return {
+    const response = {
       name: chain_name,
       path: chain.path,
       chain_name, 
@@ -17,8 +17,12 @@ function ChainsController(registry) {
       coingecko_id: baseAsset && baseAsset.coingecko_id,
       image: baseAsset && baseAsset.image,
       height: await chain.getBlockHeight(),
-      apis: chain.apis
+      best_apis: {
+        rest: await chain.apis.bestUrls('rest'),
+        rpc: await chain.apis.bestUrls('rest')
+      }
     };
+    return summarize ? response : {...chain.chain, ...response}
   }
 
   async function repositoryResponse() {
@@ -40,7 +44,7 @@ function ChainsController(registry) {
       renderJson(ctx, {
         repository: await repositoryResponse(),
         chains: await Promise.all(chains.map(async chain => {
-          return await summary(chain);
+          return await chainResponse(chain, true);
         }))
       });
     });
@@ -49,7 +53,7 @@ function ChainsController(registry) {
       const chain = await registry.getChain(ctx.params.chain);
       renderJson(ctx, chain && {
         repository: await repositoryResponse(),
-        chain: await summary(chain)
+        chain: await chainResponse(chain)
       });
     });
 
