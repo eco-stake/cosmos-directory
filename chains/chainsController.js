@@ -21,20 +21,24 @@ function ChainsController(registry) {
     };
   }
 
+  async function repositoryResponse() {
+    const repository = await registry.repository()
+    const commit = await registry.commit()
+    return {
+      url: repository.url,
+      branch: repository.branch,
+      commit: commit.oid,
+      timestamp: commit.commit.author.timestamp
+    }
+  }
+
   function routes() {
     const router = new Router();
 
     router.get('/', async (ctx, next) => {
-      const repository = await registry.repository()
-      const commit = await registry.commit()
       const chains = await registry.getChains()
       renderJson(ctx, {
-        repository: {
-          url: repository.url,
-          branch: repository.branch,
-          commit: commit.oid,
-          timestamp: commit.commit.author.timestamp
-        },
+        repository: await repositoryResponse(),
         chains: await Promise.all(chains.map(async chain => {
           return await summary(chain);
         }))
@@ -43,7 +47,10 @@ function ChainsController(registry) {
 
     router.get('/:chain', async (ctx, next) => {
       const chain = await registry.getChain(ctx.params.chain);
-      renderJson(ctx, chain && await summary(chain));
+      renderJson(ctx, chain && {
+        repository: await repositoryResponse(),
+        chain: await summary(chain)
+      });
     });
 
     router.get('/:chain/:dataset', async (ctx, next) => {
