@@ -27,7 +27,7 @@ function HealthMonitor() {
       const apis = await chain.apis()
       await Promise.all(['rpc', 'rest'].map(async (type) => {
         const urls = apis.apis[type] || [];
-        const health = apis.health[type];
+        const health = apis.health[type] || {};
         const updated = await Promise.all([...urls].map(async (url) => {
           if (pending(url.address)) return;
 
