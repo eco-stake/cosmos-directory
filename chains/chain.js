@@ -29,16 +29,21 @@ function Chain(client, data) {
     return assets && assets[0]
   }
 
+  function getDataset(dataset){
+    dataset = ['path'].includes(dataset) ? undefined : dataset
+    return dataset && data[dataset]
+  }
+
   return {
     path: path,
     chainId: chain.chain_id,
     name: chain.name,
     prettyName: chain.pretty_name,
     assets,
-    data,
     ...data,
     apis,
-    baseAsset
+    baseAsset,
+    getDataset
   };
 }
 

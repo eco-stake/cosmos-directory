@@ -22,12 +22,18 @@ function RegistryValidator(registryData) {
     }
   }
 
+  function getDataset(dataset){
+    dataset = ['path'].includes(dataset) ? undefined : dataset
+    return dataset && registryData[dataset]
+  }
+
   return {
     path,
     name: profile.name,
     identity: profile.identity,
     ...registryData,
-    validatorForChain
+    validatorForChain,
+    getDataset
   }
 }
 

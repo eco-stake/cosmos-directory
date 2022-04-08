@@ -72,8 +72,7 @@ function ValidatorsController(registry) {
     router.get('/:validator/:dataset', async (ctx, next) => {
       const validator = await registry.getRegistryValidator(ctx.params.validator);
       let dataset = ctx.params.dataset.replace(/\.[^.]*$/,'')
-      dataset = ['path'].includes(dataset) ? undefined : dataset
-      renderJson(ctx, validator && dataset && validator.registryData[dataset]);
+      renderJson(ctx, validator && validator.getDataset(dataset));
     });
 
     return router.routes();
