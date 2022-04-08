@@ -7,7 +7,7 @@ services:
       - DEBUG=1
       - NODE_ENV=development
       - APP_NAME=app
-      - APP_COUNT=3
+      - APP_COUNT=2
     env_file:
       - .env
     ports:
@@ -23,13 +23,6 @@ services:
       - DEBUG=1
       - NODE_ENV=development
       - APP_NAME=worker
-      - HEALTH_REFRESH=10
-      - CHAIN_URL=https://github.com/eco-stake/chain-registry
-      - CHAIN_BRANCH=cosmos-directory-dev
-      - CHAIN_REFRESH=60
-      - VALIDATOR_URL=https://github.com/eco-stake/validator-registry
-      - VALIDATOR_BRANCH=master
-      - VALIDATOR_REFRESH=300
     env_file:
       - .env
     volumes:

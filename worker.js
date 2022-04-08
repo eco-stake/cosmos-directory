@@ -5,11 +5,11 @@ import HealthMonitor from './status/healthMonitor.js';
 import ValidatorMonitor from './validators/validatorMonitor.js';
 import { redisClient } from "./redisClient.js";
 
-const chainUrl = process.env.CHAIN_URL
-const chainBranch = process.env.CHAIN_BRANCH
+const chainUrl = process.env.CHAIN_URL || 'https://github.com/cosmos/chain-registry'
+const chainBranch = process.env.CHAIN_BRANCH || 'master'
 const chainRefreshSeconds = parseInt(process.env.CHAIN_REFRESH || 1800)
-const validatorUrl = process.env.VALIDATOR_URL
-const validatorBranch = process.env.VALIDATOR_BRANCH
+const validatorUrl = process.env.VALIDATOR_URL || 'https://github.com/eco-stake/validator-registry'
+const validatorBranch = process.env.VALIDATOR_BRANCH || 'master'
 const validatorRefreshSeconds = parseInt(process.env.VALIDATOR_REFRESH || 1800)
 const healthSeconds = parseInt(process.env.HEALTH_REFRESH || 10)
 const CHAIN_REFRESH_INTERVAL = 1000 * chainRefreshSeconds
