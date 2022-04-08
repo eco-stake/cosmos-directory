@@ -56,7 +56,7 @@ The proxies are CORS enabled with no origin restrictions so can be used to acces
 
 [Chain Registry](https://github.com/cosmos/chain-registry) JSON API, and additional endpoints decorated by Cosmos Directory.
 
-**[GET /](https://chains.cosmos.directory/)**
+#### [GET /](https://chains.cosmos.directory/)
 
 Excerpt of data for all chains from Chain Registry. Useful for listing pages etc.
 
@@ -86,7 +86,7 @@ Excerpt of data for all chains from Chain Registry. Useful for listing pages etc
 }
 ```
 
-**[GET /{chain}](https://chains.cosmos.directory/osmosis)**
+#### [GET /{chain}](https://chains.cosmos.directory/osmosis)
 
 Excerpt of data for a specific chain from Chain Registry. 
 
@@ -115,7 +115,7 @@ Excerpt of data for a specific chain from Chain Registry.
 }
 ```
 
-**[GET /{chain}/{dataset}](https://chains.cosmos.directory/akash/chain)**
+#### [GET /{chain}/{dataset}](https://chains.cosmos.directory/akash/chain)
 
 Data exactly as it appears in the [Chain Registry](https://github.com/cosmos/chain-registry/tree/master/akash). `{dataset}` is the file from the repository, e.g. `chain` or `assetlist.json` (.json extension is optional).
 
@@ -147,7 +147,7 @@ Cosmos.directory won't decorate these endpoints so they can be a direct API repr
 
 [Validator Registry](https://github.com/eco-stake/validator-registry) JSON API, and additional endpoints decorated by Cosmos Directory.
 
-**[GET /](https://validators.cosmos.directory/)**
+#### [GET /](https://validators.cosmos.directory/)
 
 Excerpt of data for all validators from Validator Registry, decorated with Cosmos Directory data.
 
@@ -180,7 +180,7 @@ Excerpt of data for all validators from Validator Registry, decorated with Cosmo
 }
 ```
 
-**[GET /{validator}](https://validators.cosmos.directory/ecostake)**
+#### [GET /{validator}](https://validators.cosmos.directory/ecostake)
 
 Excerpt of data for a specific validator from Validator Registry. 
 
@@ -211,7 +211,7 @@ Excerpt of data for a specific validator from Validator Registry.
 }
 ```
 
-**[GET /{validator}/{dataset}](https://validators.cosmos.directory/ecostake/profile)**
+#### [GET /{validator}/{dataset}](https://validators.cosmos.directory/ecostake/profile)
 
 Data exactly as it appears in the [Validator Registry](https://github.com/eco-stake/validator-registry/tree/master/ecostake). `{dataset}` is the file from the repository, e.g. `profile` or `chains.json` (.json extension is optional).
 
@@ -227,7 +227,7 @@ Cosmos.directory won't decorate these endpoints so they can be a direct API repr
 }
 ```
 
-**[GET /chains/{chain}](https://validators.cosmos.directory/chains/osmosis)**
+#### [GET /chains/{chain}](https://validators.cosmos.directory/chains/osmosis)
 
 On-chain validator information decorated with Cosmos Directory data. The on-chain data is cached by Cosmos Directory so this endpoint is very performant, and includes data such as REStake attributes, image URLs (pre-resolved from Keybase), and more in the future. 
 
