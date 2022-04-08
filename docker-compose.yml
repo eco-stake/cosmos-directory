@@ -5,6 +5,7 @@ services:
     build: .
     environment:
       - DEBUG=1
+      - NODE_ENV=development
       - APP_NAME=app
       - APP_COUNT=3
     env_file:
@@ -20,6 +21,7 @@ services:
     build: .
     environment:
       - DEBUG=1
+      - NODE_ENV=development
       - APP_NAME=worker
       - HEALTH_REFRESH=10
       - CHAIN_URL=https://github.com/eco-stake/chain-registry

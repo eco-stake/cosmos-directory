@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@bugsnag/js": "^7.16.2",
+    "@bugsnag/plugin-koa": "^7.16.2",
     "@koa/cors": "^3.1.0",
     "agentkeepalive": "^4.2.1",
     "bytes": "^3.1.0",
