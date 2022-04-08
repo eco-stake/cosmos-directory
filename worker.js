@@ -1,3 +1,4 @@
+import Bugsnag from "@bugsnag/js"
 import ChainRegistry from './chains/chainRegistry.js';
 import Repository from './repository/repository.js';
 import HealthMonitor from './status/healthMonitor.js';
@@ -24,6 +25,14 @@ console.log("Using config:", {
   validatorRefreshSeconds,
   healthSeconds
 })
+
+if(process.env.BUGSNAG_KEY){
+  Bugsnag.start({
+    apiKey: process.env.BUGSNAG_KEY,
+    enabledReleaseStages: ['production', 'staging'],
+    releaseStage: process.env.NODE_ENV
+  })
+}
 
 async function queueHealthCheck(client, registry, health) {
   setTimeout(async () => {
