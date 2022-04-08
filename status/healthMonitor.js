@@ -24,15 +24,15 @@ function HealthMonitor() {
   async function refreshApis(client, chains) {
     timeStamp('Running health checks');
     await Promise.all([...chains].map(async (chain) => {
-      const apis = chain.apis
+      const apis = await chain.apis()
       await Promise.all(['rpc', 'rest'].map(async (type) => {
         const urls = apis.apis[type] || [];
-        const current = await apis.current(type);
+        const health = apis.health[type];
         const updated = await Promise.all([...urls].map(async (url) => {
           if (pending(url.address)) return;
 
-          const currentUrl = current[url.address];
-          return await checkUrl(url, type, chain, { ...currentUrl });
+          const urlHealth = health[url.address];
+          return await checkUrl(url, type, chain, { ...urlHealth });
         }));
         if(!await client.exists('health:' + chain.path)) await client.json.set('health:' + chain.path, '$', {})
         await client.json.set('health:' + chain.path, '$.' + type, updated.reduce((sum, url) => {
@@ -46,7 +46,7 @@ function HealthMonitor() {
     debugLog('Health checks complete')
   }
 
-  function checkUrl(url, type, chain, currentUrl) {
+  function checkUrl(url, type, chain, urlHealth) {
     const request = async () => {
       try {
         let address = new URL(url.address).href.replace(/\/$|$/, '/')
@@ -55,9 +55,9 @@ function HealthMonitor() {
           retry: { limit: 1 },
           agent: agent
         });
-        return buildUrl(type, chain, url, currentUrl, response);
+        return buildUrl(type, chain, url, urlHealth, response);
       } catch (error) {
-        return buildUrl(type, chain, url, currentUrl, undefined, error);
+        return buildUrl(type, chain, url, urlHealth, undefined, error);
       }
     };
     return queue.add(request, { identifier: url.address });
@@ -67,11 +67,11 @@ function HealthMonitor() {
     return type === 'rest' ? 'blocks/latest' : 'block';
   }
 
-  function buildUrl(type, chain, url, currentUrl, response, error) {
+  function buildUrl(type, chain, url, urlHealth, response, error) {
     let timings, body, data
-    let blockTime = currentUrl?.blockTime
-    let blockHeight = currentUrl?.blockHeight || 0;
-    let finalAddress = currentUrl?.finalAddress
+    let blockTime = urlHealth?.blockTime
+    let blockHeight = urlHealth?.blockHeight || 0;
+    let finalAddress = urlHealth?.finalAddress
     if (!error) {
       ({ timings, body } = response)
       data = JSON.parse(body);
@@ -83,8 +83,8 @@ function HealthMonitor() {
     }
     const responseTime = timings?.phases?.total
 
-    let { lastError, lastErrorAt, available } = currentUrl;
-    let errorCount = currentUrl.errorCount || 0;
+    let { lastError, lastErrorAt, available } = urlHealth;
+    let errorCount = urlHealth.errorCount || 0;
     if (error) {
       errorCount++;
       lastError = error.message;
@@ -99,7 +99,7 @@ function HealthMonitor() {
 
     let nowAvailable = false;
     if (errorCount <= ALLOWED_ERRORS) {
-      nowAvailable = !error || !!currentUrl.available;
+      nowAvailable = !error || !!urlHealth.available;
     }
     if (available && !nowAvailable) {
       timeStamp('Removing', chain.path, type, url.address, error.message);

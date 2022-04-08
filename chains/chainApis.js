@@ -6,27 +6,27 @@ const BEST_RESPONSE_DIFF = 1
 const BEST_ERROR_DIFF = 5 * 60
 const IGNORE_ERROR_DIFF = 60 * 60
 
-function ChainApis(client, path, apis) {
-  async function bestAddress(type) {
-    const urls = await bestUrls(type).then(urls => urls.slice(0, BEST_NODE_COUNT))
+function ChainApis(apis, health) {
+  function bestAddress(type) {
+    const urls = bestUrls(type).slice(0, BEST_NODE_COUNT)
     const best = _.sample(urls)
     return best && best.address
   }
 
-  async function bestHeight(type) {
+  function bestHeight(type) {
     let urls
     if(type){
-      urls = Object.values(await current(type))
+      urls = Object.values(health[type])
     }else{
-      urls = Object.values(await current()).reduce((sum, urls) => {
+      urls = Object.values(health).reduce((sum, urls) => {
         return sum.concat(Object.values(urls))
       }, [])
     }
     return Math.max(...urls.map(el => el.blockHeight).filter(Number.isFinite))
   }
 
-  async function bestUrls(type) {
-    let urls = Object.values(await current(type)).filter(el => el.available)
+  function bestUrls(type) {
+    let urls = Object.values(health[type]).filter(el => el.available)
     const bestHeight = Math.max(...urls.map(el => el.blockHeight).filter(Number.isFinite))
     urls = urls.filter(el => {
       if (!el.blockHeight)
@@ -57,20 +57,12 @@ function ChainApis(client, path, apis) {
     })
   }
 
-  async function current(type) {
-    if (!await client.exists('health:' + path)) {
-      return {}
-    }
-    const currentUrls = await client.json.get('health:' + path, '$')
-    return type ? (currentUrls[type] || {}) : currentUrls
-  }
-
   return {
     bestAddress,
     bestUrls,
     bestHeight,
     apis,
-    current
+    health
   }
 }
 

@@ -14,20 +14,19 @@ const StatusController = (client, registry) => {
   }
 
   const chainStatus = async (chain) => {
-    const apis = chain.apis
+    const apis = await chain.apis()
     const data = {
       name: chain.name,
-      height: await apis.bestHeight(),
+      height: apis.bestHeight(),
     }
-    return ['rpc', 'rest'].reduce(async (asyncSum, type) => {
-      const sum = await asyncSum
-      const available = await apis.bestAddress(type)
+    return ['rpc', 'rest'].reduce((sum, type) => {
+      const available = apis.bestAddress(type)
       sum.available = sum.available === false ? false : !!available
       sum[type] = {
         available: !!available,
-        height: await apis.bestHeight(type),
-        best: await apis.bestUrls(type),
-        current: await apis.current(type)
+        height: apis.bestHeight(type),
+        best: apis.bestUrls(type),
+        current: apis.health[type]
       }
       return sum
     }, data)

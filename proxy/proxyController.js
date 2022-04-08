@@ -96,7 +96,8 @@ const ProxyController = (client, registry) => {
       const params = match(ctx.path)
       const chainName = params?.chain
       const chain = chainName && await registry.getChain(chainName)
-      const url = chain && await chain.apis.bestAddress(type)
+      const apis = chain && await chain.apis(type)
+      const url = apis.bestAddress(type)
       if (!chain) {
         ctx.res.writeHead(404, {
           'Content-Type': 'text/plain'

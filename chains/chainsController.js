@@ -5,6 +5,7 @@ function ChainsController(registry) {
   async function chainResponse(chain, summarize) {
     const { chain_name, network_type, pretty_name, chain_id, status } = chain.chain;
     const baseAsset = chain.baseAsset()
+    const apis = await chain.apis()
     const response = {
       name: chain_name,
       path: chain.path,
@@ -16,10 +17,10 @@ function ChainsController(registry) {
       symbol: baseAsset && baseAsset.symbol,
       coingecko_id: baseAsset && baseAsset.coingecko_id,
       image: baseAsset && baseAsset.image,
-      height: await chain.getBlockHeight(),
+      height: apis.bestHeight(),
       best_apis: {
-        rest: await chain.apis.bestUrls('rest'),
-        rpc: await chain.apis.bestUrls('rest')
+        rest: apis.bestUrls('rest'),
+        rpc: apis.bestUrls('rpc')
       }
     };
     return summarize ? response : {...chain.chain, ...response}

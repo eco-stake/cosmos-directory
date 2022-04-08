@@ -21,7 +21,8 @@ function ValidatorMonitor() {
   async function refreshValidators(client, chains) {
     timeStamp('Running validator update');
     await Promise.all([...chains].map(async (chain) => {
-      const url = await chain.apis.bestAddress('rest')
+      const apis = await chain.apis('rest')
+      const url = apis.bestAddress('rest')
       if(!url) return timeStamp(chain.path, 'No API URL')
 
       if (!await client.exists('validators:' + chain.path)) await client.json.set('validators:' + chain.path, '$', {})
