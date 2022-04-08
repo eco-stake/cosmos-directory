@@ -31,7 +31,7 @@ function HealthMonitor() {
         const updated = await Promise.all([...urls].map(async (url) => {
           if (pending(url.address)) return;
 
-          const urlHealth = health[url.address];
+          const urlHealth = health[url.address] || {};
           return await checkUrl(url, type, chain, { ...urlHealth });
         }));
         if(!await client.exists('health:' + chain.path)) await client.json.set('health:' + chain.path, '$', {})

@@ -26,7 +26,7 @@ const StatusController = (client, registry) => {
         available: !!available,
         height: apis.bestHeight(type),
         best: apis.bestUrls(type),
-        current: apis.health[type]
+        current: apis.health[type] || {}
       }
       return sum
     }, data)

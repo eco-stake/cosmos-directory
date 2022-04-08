@@ -16,7 +16,7 @@ function ChainApis(apis, health) {
   function bestHeight(type) {
     let urls
     if(type){
-      urls = Object.values(health[type])
+      urls = Object.values(health[type] || {})
     }else{
       urls = Object.values(health).reduce((sum, urls) => {
         return sum.concat(Object.values(urls))
@@ -26,7 +26,7 @@ function ChainApis(apis, health) {
   }
 
   function bestUrls(type) {
-    let urls = Object.values(health[type]).filter(el => el.available)
+    let urls = Object.values(health[type] || {}).filter(el => el.available)
     const bestHeight = Math.max(...urls.map(el => el.blockHeight).filter(Number.isFinite))
     urls = urls.filter(el => {
       if (!el.blockHeight)
