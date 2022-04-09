@@ -5,8 +5,8 @@ import Agent from 'agentkeepalive'
 import { timeStamp, debugLog } from '../utils.js';
 import { UniqueQueue } from '../uniqueQueue.js';
 
-const ALLOWED_DELAY = 10 * 60
-const ALLOWED_ERRORS = 5
+const ALLOWED_DELAY = 30 * 60
+const ALLOWED_ERRORS = 10
 const ERROR_COOLDOWN = 10 * 60
 const HEALTH_TIMEOUT = 5000
 
