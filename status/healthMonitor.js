@@ -12,8 +12,8 @@ const HEALTH_TIMEOUT = 5000
 
 function HealthMonitor() {
   const agent = {
-    http: new Agent({ maxSockets: 1 }),
-    https: new Agent.HttpsAgent({ maxSockets: 1 })
+    http: new Agent({ maxSockets: 10 }),
+    https: new Agent.HttpsAgent({ maxSockets: 10 })
   }
   const queue = new PQueue({ concurrency: 10, queueClass: UniqueQueue });
 
