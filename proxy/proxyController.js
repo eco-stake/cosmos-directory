@@ -15,7 +15,7 @@ const CACHED_REQUESTS = [
   },
   {
     path: 'cosmos/authz/v1beta1/grants',
-    maxAge: 1 * 60
+    maxAge: 20
   },
   {
     path: new RegExp("cosmos/staking/v1beta1/delegations/[\\w\\d]*$"),
