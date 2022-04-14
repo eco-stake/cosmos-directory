@@ -3,6 +3,7 @@ import * as http from 'isomorphic-git/http/node/index.cjs'
 import fs from 'fs'
 import path from 'path'
 import _ from 'lodash'
+import Bugsnag from "@bugsnag/js"
 import { join } from 'path';
 import { timeStamp } from '../utils.js';
 
@@ -59,6 +60,9 @@ function Repository(client, url, branch, opts) {
       await updateRepo();
       await loadData();
     } catch (error) {
+      Bugsnag.notify(error, function (event) {
+        event.context = name
+      })
       timeStamp('Failed to update', name, error);
     }
   }
