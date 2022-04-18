@@ -1,0 +1,10 @@
+[{
+  "name": "app",
+  "script": "app.js",
+  "instances": 3,
+  "watch": true
+}, {
+  "name": "worker",
+  "script": "worker.js",
+  "watch": true
+}]

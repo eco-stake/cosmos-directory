@@ -1,7 +1,0 @@
-[{
-  "name": "app",
-  "script": "app.js"
-}, {
-  "name": "worker",
-  "script": "worker.js"
-}]

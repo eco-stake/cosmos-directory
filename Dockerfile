@@ -10,7 +10,7 @@ COPY . ./
 
 EXPOSE 3000
 
+ENV NODE_ENV=production
 ENV APP_NAME=app
-ENV APP_COUNT=1
 
-CMD pm2-runtime ${APP_NAME}.js --instances $APP_COUNT
+CMD pm2-runtime ecosystem.${NODE_ENV}.json --only ${APP_NAME}

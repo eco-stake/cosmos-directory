@@ -1,0 +1,11 @@
+[{
+  "name": "app",
+  "script": "app.js",
+  "instances": 3,
+  "max_memory_restart": "150M",
+  "cron_restart": "0 */3 * * *"
+}, {
+  "name": "worker",
+  "script": "worker.js",
+  "cron_restart": "0 */6 * * *"
+}]
