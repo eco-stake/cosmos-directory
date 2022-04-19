@@ -7,7 +7,6 @@ services:
       - DEBUG=1
       - NODE_ENV=development
       - APP_NAME=app
-      - APP_COUNT=2
     env_file:
       - .env
     ports:

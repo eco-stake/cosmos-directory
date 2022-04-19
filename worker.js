@@ -7,23 +7,23 @@ import { redisClient } from "./redisClient.js";
 
 const chainUrl = process.env.CHAIN_URL || 'https://github.com/cosmos/chain-registry'
 const chainBranch = process.env.CHAIN_BRANCH || 'master'
-const chainRefreshSeconds = parseInt(process.env.CHAIN_REFRESH || 1800)
+const repoRefreshSeconds = parseInt(process.env.REPO_REFRESH || 900)
 const validatorUrl = process.env.VALIDATOR_URL || 'https://github.com/eco-stake/validator-registry'
 const validatorBranch = process.env.VALIDATOR_BRANCH || 'master'
 const validatorRefreshSeconds = parseInt(process.env.VALIDATOR_REFRESH || 1800)
-const healthSeconds = parseInt(process.env.HEALTH_REFRESH || 10)
-const CHAIN_REFRESH_INTERVAL = 1000 * chainRefreshSeconds
+const healthRefreshSeconds = parseInt(process.env.HEALTH_REFRESH || 10)
+const REPO_REFRESH_INTERVAL = 1000 * repoRefreshSeconds
 const VALIDATOR_REFRESH_INTERVAL = 1000 * validatorRefreshSeconds
-const HEALTH_REFRESH_INTERVAL = 1000 * healthSeconds
+const HEALTH_REFRESH_INTERVAL = 1000 * healthRefreshSeconds
 
 console.log("Using config:", {
   chainUrl,
   chainBranch,
-  chainRefreshSeconds,
+  repoRefreshSeconds,
   validatorUrl,
   validatorBranch,
   validatorRefreshSeconds,
-  healthSeconds
+  healthRefreshSeconds
 })
 
 if(process.env.BUGSNAG_KEY){
@@ -56,10 +56,10 @@ async function queueValidatorCheck(client, registry, monitor) {
   const chainRepo = Repository(client, chainUrl, chainBranch, { exclude: ['testnets'] })
   const validatorRepo = Repository(client, validatorUrl, validatorBranch, { exclude: [] })
   await chainRepo.refresh()
-  setInterval(() => chainRepo.refresh(), CHAIN_REFRESH_INTERVAL)
+  setInterval(() => chainRepo.refresh(), REPO_REFRESH_INTERVAL)
 
   await validatorRepo.refresh()
-  setInterval(() => validatorRepo.refresh(), VALIDATOR_REFRESH_INTERVAL)
+  setInterval(() => validatorRepo.refresh(), REPO_REFRESH_INTERVAL)
 
   const chainRegistry = ChainRegistry(client)
   const chains = await chainRegistry.getChains()
@@ -72,5 +72,7 @@ async function queueValidatorCheck(client, registry, monitor) {
 
   const validatorMonitor = ValidatorMonitor()
   await validatorMonitor.refreshValidators(client, chains)
-  queueValidatorCheck(client, chainRegistry, validatorMonitor)
+  if (VALIDATOR_REFRESH_INTERVAL > 0) {
+    queueValidatorCheck(client, chainRegistry, validatorMonitor)
+  }
 })();
