@@ -48,10 +48,10 @@ function ChainMonitor() {
         }
       }
       try {
-        const currentBlock = await got.get(restUrl + 'cosmos/base/tendermint/v1beta1/blocks/latest').json()
+        const currentBlock = await got.get(restUrl + 'blocks/latest').json()
         const currentBlockTime = new Date(currentBlock.block.header.time) / 1000
         const currentBlockHeight = currentBlock.block.header.height
-        const prevBlock = await got.get(restUrl + 'cosmos/base/tendermint/v1beta1/blocks/' + (currentBlockHeight - 100)).json()
+        const prevBlock = await got.get(restUrl + 'blocks/' + (currentBlockHeight - 100)).json()
         const prevBlockTime = new Date(prevBlock.block.header.time) / 1000
         const prevBlockHeight = prevBlock.block.header.height
         const actualBlockTime = (currentBlockTime - prevBlockTime) / (currentBlockHeight - prevBlockHeight)
