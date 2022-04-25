@@ -6,6 +6,13 @@ function Chain(client, data) {
   chain.name = chain.chain_name
   const assets = assetlist && assetlist.assets.map(el => ChainAsset(el));
 
+  async function params() {
+    if (!await client.exists('chains:' + path)) {
+      return {}
+    }
+    return await client.json.get('chains:' + path, '.') || {}
+  }
+
   async function apis(type){
     const health = await apiHealth(type)
     return ChainApis(chain.apis || {}, health)
@@ -39,8 +46,11 @@ function Chain(client, data) {
     chainId: chain.chain_id,
     name: chain.name,
     prettyName: chain.pretty_name,
+    denom: baseAsset()?.denom,
+    symbol: baseAsset()?.symbol,
     assets,
     ...data,
+    params,
     apis,
     baseAsset,
     getDataset

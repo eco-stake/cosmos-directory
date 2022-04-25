@@ -9,14 +9,10 @@ const TIMEOUT = 20000
 
 function ValidatorMonitor() {
   const agent = {
-    http: new Agent({ maxSockets: 80 }),
-    https: new Agent.HttpsAgent({ maxSockets: 80 })
+    http: new Agent({ maxSockets: 100 }),
+    https: new Agent.HttpsAgent({ maxSockets: 100 })
   }
   const queue = new PQueue({ concurrency: 2, queueClass: UniqueQueue });
-
-  function pending(address) {
-    return queue.sizeBy({ address }) > 0;
-  }
 
   async function refreshValidators(client, chains) {
     timeStamp('Running validator update');
@@ -26,7 +22,7 @@ function ValidatorMonitor() {
       if(!url) return timeStamp(chain.path, 'No API URL')
 
       if (!await client.exists('validators:' + chain.path)) await client.json.set('validators:' + chain.path, '$', {})
-      const current = client.json.get('validators:' + chain.path, '$')
+      const current = await client.json.get('validators:' + chain.path, '$')
 
       let validators = await getAllValidators(url, chain.path, current.validators || {});
       if(!validators) return timeStamp(chain.path, 'Empty response')
@@ -136,8 +132,7 @@ function ValidatorMonitor() {
   };
 
   return {
-    refreshValidators,
-    pending
+    refreshValidators
   };
 }
 

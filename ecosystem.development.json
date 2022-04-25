@@ -1,7 +1,7 @@
 [{
   "name": "app",
   "script": "app.js",
-  "instances": 3,
+  "instances": 1,
   "watch": true
 }, {
   "name": "worker",
