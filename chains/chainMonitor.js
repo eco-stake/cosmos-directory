@@ -56,6 +56,9 @@ function ChainMonitor() {
         const prevBlockHeight = prevBlock.block.header.height
         const actualBlockTime = (currentBlockTime - prevBlockTime) / (currentBlockHeight - prevBlockHeight)
         const actualBlocksPerYear = (365 * 24 * 60 * 60) / actualBlockTime
+        const staking = await got.get(restUrl + 'cosmos/staking/v1beta1/params').json();
+        const unbondingTime = parseInt(staking.params.unbonding_time.replace('s', ''))
+        const maxValidators = staking.params.max_validators
         const pool = await got.get(restUrl + 'cosmos/staking/v1beta1/pool').json();
         const bondedTokens = bignumber(pool.pool.bonded_tokens);
         let supply, totalSupply, bondedRatio, baseInflation, communityTax, estimatedApr, calculatedApr, blocksPerYear, blockTime
@@ -96,6 +99,8 @@ function ChainMonitor() {
           blocksPerYear,
           actualBlockTime,
           actualBlocksPerYear,
+          unbondingTime,
+          maxValidators,
           communityTax,
           bondedRatio,
           baseInflation,
