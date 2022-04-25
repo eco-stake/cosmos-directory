@@ -5,27 +5,17 @@ function ChainAsset(data) {
   const logo_URIs = data.logo_URIs
   const image = logo_URIs && (logo_URIs.svg || logo_URIs.png)
 
-  const summary = () => {
-    return {
-      name,
-      symbol,
-      coingecko_id,
-      base,
-      token,
-      image
-    }
-  }
-
   return {
     name,
     display,
     symbol,
+    denom: base.denom,
+    decimals: token?.exponent || 6,
     coingecko_id,
     base,
     token,
     logo_URIs,
-    image,
-    summary
+    image
   }
 }
 
