@@ -186,6 +186,10 @@ const ProxyController = (client, registry) => {
         resolve()
       })
 
+      proxy.on('proxyRes', (proxyRes, req, res) => {
+        proxyRes.headers["x-forwarded-to"] = url;
+      });
+
       proxy.web(ctx.req, ctx.res, opts, e => {
         const status = {
           ECONNREFUSED: 503,
