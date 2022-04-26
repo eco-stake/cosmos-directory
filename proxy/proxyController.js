@@ -30,11 +30,11 @@ const CACHED_REQUESTS = [
     maxAge: 20
   },
   {
-    path: new RegExp("/cosmos/staking/v1beta1/validators/[\\w\\d]*/delegations$"),
+    path: new RegExp("cosmos/staking/v1beta1/validators/[\\w\\d]*/delegations$"),
     maxAge: 60
   },
   {
-    path: new RegExp("/cosmos/distribution/v1beta1/delegators/[\\w\\d]*/withdraw_address$"),
+    path: new RegExp("cosmos/distribution/v1beta1/delegators/[\\w\\d]*/withdraw_address$"),
     maxAge: 5 * 60
   },
   {
@@ -83,36 +83,11 @@ const ProxyController = (client, registry) => {
 
   function routes(type){
     return compose([
-      getChain(type),
       initCache(),
       serveCache,
+      getChain(type),
       proxyRequest
     ])
-  }
-
-  function getChain(type){
-    return async (ctx, next) => {
-      const match = route('/:chain')
-      const params = match(ctx.path)
-      const chainName = params?.chain
-      const chain = chainName && await registry.getChain(chainName)
-      const apis = chain && await chain.apis(type)
-      const url = apis?.bestAddress(type)
-      if (!chain) {
-        ctx.res.writeHead(404, {
-          'Content-Type': 'text/plain'
-        });
-        return ctx.res.end('Chain not found');
-      } else if (!url) {
-        ctx.res.writeHead(502, {
-          'Content-Type': 'text/plain'
-        });
-        return ctx.res.end('No servers available');
-      }
-      ctx.state.chainName = chainName
-      ctx.state.proxyUrl = url
-      return next()
-    }
   }
 
   function initCache(){
@@ -154,6 +129,31 @@ const ProxyController = (client, registry) => {
     return next()
   }
 
+  function getChain(type){
+    return async (ctx, next) => {
+      const match = route('/:chain')
+      const params = match(ctx.path)
+      const chainName = params?.chain
+      const chain = chainName && await registry.getChain(chainName)
+      const apis = chain && await chain.apis(type)
+      const url = apis?.bestAddress(type)
+      if (!chain) {
+        ctx.res.writeHead(404, {
+          'Content-Type': 'text/plain'
+        });
+        return ctx.res.end('Chain not found');
+      } else if (!url) {
+        ctx.res.writeHead(502, {
+          'Content-Type': 'text/plain'
+        });
+        return ctx.res.end('No servers available');
+      }
+      ctx.state.chainName = chainName
+      ctx.state.proxyUrl = url
+      return next()
+    }
+  }
+
   async function proxyRequest(ctx, next){
     const chainName = ctx.state.chainName
     if (!chainName) return next()
@@ -185,6 +185,10 @@ const ProxyController = (client, registry) => {
       ctx.res.on('finish', () => { 
         resolve()
       })
+
+      proxy.on('proxyRes', (proxyRes, req, res) => {
+        proxyRes.headers["x-forwarded-to"] = url;
+      });
 
       proxy.web(ctx.req, ctx.res, opts, e => {
         const status = {

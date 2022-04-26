@@ -41,9 +41,9 @@ function ChainMonitor() {
 
       let data = current
       try { await got.get(restUrl + 'cosmos/authz/v1beta1/grants') } catch (error) {
-        if (error.response.statusCode === 400) {
+        if (error.response?.statusCode === 400) {
           data.authz = true
-        } else if(error.response.statusCode === 501) {
+        } else if(error.response?.statusCode === 501) {
           data.authz = false
         }
       }
