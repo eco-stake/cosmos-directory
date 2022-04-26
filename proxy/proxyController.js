@@ -83,36 +83,11 @@ const ProxyController = (client, registry) => {
 
   function routes(type){
     return compose([
-      getChain(type),
       initCache(),
       serveCache,
+      getChain(type),
       proxyRequest
     ])
-  }
-
-  function getChain(type){
-    return async (ctx, next) => {
-      const match = route('/:chain')
-      const params = match(ctx.path)
-      const chainName = params?.chain
-      const chain = chainName && await registry.getChain(chainName)
-      const apis = chain && await chain.apis(type)
-      const url = apis?.bestAddress(type)
-      if (!chain) {
-        ctx.res.writeHead(404, {
-          'Content-Type': 'text/plain'
-        });
-        return ctx.res.end('Chain not found');
-      } else if (!url) {
-        ctx.res.writeHead(502, {
-          'Content-Type': 'text/plain'
-        });
-        return ctx.res.end('No servers available');
-      }
-      ctx.state.chainName = chainName
-      ctx.state.proxyUrl = url
-      return next()
-    }
   }
 
   function initCache(){
@@ -152,6 +127,31 @@ const ProxyController = (client, registry) => {
       debugLog('Skipping cache', path)
     }
     return next()
+  }
+
+  function getChain(type){
+    return async (ctx, next) => {
+      const match = route('/:chain')
+      const params = match(ctx.path)
+      const chainName = params?.chain
+      const chain = chainName && await registry.getChain(chainName)
+      const apis = chain && await chain.apis(type)
+      const url = apis?.bestAddress(type)
+      if (!chain) {
+        ctx.res.writeHead(404, {
+          'Content-Type': 'text/plain'
+        });
+        return ctx.res.end('Chain not found');
+      } else if (!url) {
+        ctx.res.writeHead(502, {
+          'Content-Type': 'text/plain'
+        });
+        return ctx.res.end('No servers available');
+      }
+      ctx.state.chainName = chainName
+      ctx.state.proxyUrl = url
+      return next()
+    }
   }
 
   async function proxyRequest(ctx, next){
