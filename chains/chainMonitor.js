@@ -16,8 +16,7 @@ function ChainMonitor() {
   async function refreshChains(client, chains) {
     timeStamp('Running chain update');
     await Promise.all([...chains].map(async (chain) => {
-      if (!await client.exists('chains:' + chain.path)) await client.json.set('chains:' + chain.path, '$', {})
-      const current = await client.json.get('chains:' + chain.path, '$')
+      const current = await client.json.get('chains:' + chain.path, '$') || {}
 
       let chainParams = await getChainParams(chain, current.params || {});
       if(!chainParams) return timeStamp(chain.path, 'Empty chain response')

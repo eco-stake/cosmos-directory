@@ -3,23 +3,15 @@ import RegistryValidator from './registryValidator.js'
 
 function ValidatorRegistry(client) {
   async function repository() {
-    if (!await client.exists('validator-registry:repository')) return {}
-
-    return await client.json.get('validator-registry:repository', '$')
+    return await client.json.get('validator-registry:repository', '$') || {}
   }
 
   async function commit() {
-    if (!await client.exists('validator-registry:commit')) return {}
-
-    return await client.json.get('validator-registry:commit', '$')
+    return await client.json.get('validator-registry:commit', '$') || {}
   }
 
   async function paths() {
-    if (!await client.exists('validator-registry:paths')) {
-      return []
-    }
-
-    return await client.json.get('validator-registry:paths', '$')
+    return await client.json.get('validator-registry:paths', '$') || []
   }
 
   async function getAllValidators(chainName) {
@@ -51,23 +43,15 @@ function ValidatorRegistry(client) {
   }
 
   async function getChainValidators(chainName) {
-    if (!await client.exists('validators:' + chainName)) {
-      return {}
-    }
-
-    return await client.json.get('validators:' + chainName, '$')
+    return await client.json.get('validators:' + chainName, '$') || {}
   }
 
   async function getChainValidator(chainName, address) {
-    if (!await client.exists('validators:' + chainName)) {
-      return {}
-    }
-
     return await client.json.get('validators:' + chainName, {
       path: [
-        '.validators.' + address,
+        '$.validators.' + address,
       ]
-    })
+    })[0]
   }
 
   async function getRegistryValidators() {
@@ -79,11 +63,7 @@ function ValidatorRegistry(client) {
   }
 
   async function getRegistryValidator(path) {
-    if (!await client.exists('validator-registry:' + path)) {
-      return
-    }
-
-    const data = await client.json.get('validator-registry:' + path, '$')
+    const data = await client.json.get('validator-registry:' + path, '$') || {}
     if (!data.profile)
       return
 
