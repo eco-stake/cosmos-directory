@@ -30,11 +30,11 @@ const CACHED_REQUESTS = [
     maxAge: 20
   },
   {
-    path: new RegExp("/cosmos/staking/v1beta1/validators/[\\w\\d]*/delegations$"),
+    path: new RegExp("cosmos/staking/v1beta1/validators/[\\w\\d]*/delegations$"),
     maxAge: 60
   },
   {
-    path: new RegExp("/cosmos/distribution/v1beta1/delegators/[\\w\\d]*/withdraw_address$"),
+    path: new RegExp("cosmos/distribution/v1beta1/delegators/[\\w\\d]*/withdraw_address$"),
     maxAge: 5 * 60
   },
   {
