@@ -7,10 +7,7 @@ function Chain(client, data) {
   const assets = assetlist && assetlist.assets.map(el => ChainAsset(el));
 
   async function params() {
-    if (!await client.exists('chains:' + path)) {
-      return {}
-    }
-    return await client.json.get('chains:' + path, '.') || {}
+    return await client.json.get('chains:' + path, '$') || {}
   }
 
   async function apis(type){
@@ -19,17 +16,14 @@ function Chain(client, data) {
   }
   
   async function apiHealth(type) {
-    if (!await client.exists('health:' + path)) {
-      return {}
-    }
     const healthPath = {}
     if(type){
       healthPath.path = [
-        '.' + type,
+        '$.' + type,
       ]
     }
-    const health = await client.json.get('health:' + path, healthPath)
-    return type ? {[type]: health} : health
+    const health = await client.json.get('health:' + path, healthPath) || {}
+    return type ? {[type]: health[0]} : health
   }
 
   function baseAsset(){
