@@ -83,7 +83,7 @@ function ChainMonitor() {
               communityTax = parseFloat(distribution.params.community_tax)
               const req = await got.get(restUrl + 'cosmos/mint/v1beta1/inflation').json()
               baseInflation = parseFloat(req.inflation);
-              estimatedApr = ((baseInflation / bondedRatio) - communityTax)
+              estimatedApr = baseInflation > 0 ? ((baseInflation / bondedRatio) - communityTax) : 0
               calculatedApr = estimatedApr * (actualBlocksPerYear / blocksPerYear)
             } catch (error) { 
               timeStamp(chain.path, 'Calculating APR failed', error.message)
