@@ -1,5 +1,6 @@
 import _ from "lodash"
 
+const BEST_NODE_COUNT = 2
 const BEST_HEIGHT_DIFF = 5
 const BEST_RESPONSE_DIFF = 1
 const BEST_ERROR_DIFF = 5 * 60
@@ -7,7 +8,7 @@ const IGNORE_ERROR_DIFF = 60 * 60
 
 function ChainApis(apis, health) {
   function bestAddress(type) {
-    const urls = bestUrls(type)
+    const urls = bestUrls(type).slice(0, BEST_NODE_COUNT)
     const best = _.sample(urls)
     return best && best.address
   }
