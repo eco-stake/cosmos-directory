@@ -186,6 +186,7 @@ const ProxyController = (client, registry) => {
         resolve()
       })
 
+      // Causes major memory leak
       // proxy.on('proxyRes', (proxyRes, req, res) => {
       //   proxyRes.headers["x-forwarded-to"] = ctx.state.proxyUrl;
       // });
