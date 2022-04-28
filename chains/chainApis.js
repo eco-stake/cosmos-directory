@@ -8,7 +8,7 @@ const IGNORE_ERROR_DIFF = 60 * 60
 
 function ChainApis(apis, health) {
   function bestAddress(type) {
-    const urls = bestUrls(type).slice(0, BEST_NODE_COUNT)
+    const urls = bestUrls(type)//.slice(0, BEST_NODE_COUNT)
     const best = _.sample(urls)
     return best && best.address
   }
