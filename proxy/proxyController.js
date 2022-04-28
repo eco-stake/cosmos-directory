@@ -187,7 +187,7 @@ const ProxyController = (client, registry) => {
       })
 
       proxy.on('proxyRes', (proxyRes, req, res) => {
-        proxyRes.headers["x-forwarded-to"] = url;
+        proxyRes.headers["x-forwarded-to"] = ctx.state.proxyUrl;
       });
 
       proxy.web(ctx.req, ctx.res, opts, e => {
