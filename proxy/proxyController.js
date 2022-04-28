@@ -186,9 +186,10 @@ const ProxyController = (client, registry) => {
         resolve()
       })
 
-      proxy.on('proxyRes', (proxyRes, req, res) => {
-        proxyRes.headers["x-forwarded-to"] = ctx.state.proxyUrl;
-      });
+      // Causes major memory leak
+      // proxy.on('proxyRes', (proxyRes, req, res) => {
+      //   proxyRes.headers["x-forwarded-to"] = ctx.state.proxyUrl;
+      // });
 
       proxy.web(ctx.req, ctx.res, opts, e => {
         const status = {
