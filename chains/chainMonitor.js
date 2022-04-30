@@ -32,103 +32,130 @@ function ChainMonitor() {
   }
 
   function getChainParams(chain, current) {
-    const { path, chainId, denom } = chain
+    const { path, denom } = chain
     const request = async () => {
       const apis = await chain.apis('rest')
       const restUrl = apis.bestAddress('rest')
-      if(!restUrl) return timeStamp(chain.path, 'No API URL')
+      if(!restUrl) return timeStamp(path, 'No API URL')
 
-      let data = current
-      try { await got.get(restUrl + 'cosmos/authz/v1beta1/grants') } catch (error) {
-        if (error.response?.statusCode === 400) {
-          data.authz = true
-        } else if(error.response?.statusCode === 501) {
-          data.authz = false
-        }
-      }
       try {
-        const currentBlock = await got.get(restUrl + 'blocks/latest').json()
-        const currentBlockTime = new Date(currentBlock.block.header.time) / 1000
-        const currentBlockHeight = currentBlock.block.header.height
-        const prevBlock = await got.get(restUrl + 'blocks/' + (currentBlockHeight - 100)).json()
-        const prevBlockTime = new Date(prevBlock.block.header.time) / 1000
-        const prevBlockHeight = prevBlock.block.header.height
-        const actualBlockTime = (currentBlockTime - prevBlockTime) / (currentBlockHeight - prevBlockHeight)
-        const actualBlocksPerYear = (365 * 24 * 60 * 60) / actualBlockTime
-        const staking = await got.get(restUrl + 'cosmos/staking/v1beta1/params').json();
-        const unbondingTime = parseInt(staking.params.unbonding_time.replace('s', ''))
-        const maxValidators = staking.params.max_validators
-        const pool = await got.get(restUrl + 'cosmos/staking/v1beta1/pool').json();
-        const bondedTokens = bignumber(pool.pool.bonded_tokens);
-        let supply, totalSupply, bondedRatio, baseInflation, communityTax, estimatedApr, calculatedApr, blocksPerYear, blockTime
-        if (denom){
-          supply = await got.get(restUrl + 'cosmos/bank/v1beta1/supply/' + denom).json();
-          totalSupply = bignumber(supply.amount.amount);
-          bondedRatio = parseFloat(divide(bondedTokens, totalSupply))
-          if (chainId.startsWith("osmosis")) {
-            const osmosis = await osmosisParams(restUrl, totalSupply, bondedRatio);
-            ({ baseInflation, estimatedApr } = osmosis)
-            data = { ...data, ...osmosis }
-          } else if (chainId.startsWith("sifchain")) {
-            const aprRequest = await got.get(
-              "https://data.sifchain.finance/beta/validator/stakingRewards"
-            ).json();
-            calculatedApr = aprRequest.rate;
-          } else {
-            try {
-              const mint = await got.get(restUrl + 'cosmos/mint/v1beta1/params').json();
-              blocksPerYear = parseInt(mint.params.blocks_per_year)
-              blockTime = (365 * 24 * 60 * 60) / blocksPerYear
-              const distribution = await got.get(restUrl + 'cosmos/distribution/v1beta1/params').json();
-              communityTax = parseFloat(distribution.params.community_tax)
-              const req = await got.get(restUrl + 'cosmos/mint/v1beta1/inflation').json()
-              baseInflation = parseFloat(req.inflation);
-              estimatedApr = baseInflation > 0 ? ((baseInflation / bondedRatio) - communityTax) : 0
-              calculatedApr = estimatedApr * (actualBlocksPerYear / blocksPerYear)
-            } catch (error) { 
-              timeStamp(chain.path, 'Calculating APR failed', error.message)
-            }
-          }
+        let authzParams, blockParams, stakingParams, supplyParams, mintParams
+        try {
+          authzParams = await getAuthzParams(restUrl)
+        } catch (e) { timeStamp(path, 'Authz check failed', e.message)}
+        try {
+          blockParams = await getBlockParams(restUrl)
+        } catch (e) { timeStamp(path, 'Block check failed', e.message)}
+        try {
+          stakingParams = await getStakingParams(restUrl)
+        } catch (e) { timeStamp(path, 'Staking check failed', e.message)}
+        if(denom){
+          try {
+            supplyParams = await getSupplyParams(restUrl, chain, stakingParams.bondedTokens)
+          } catch (e) { timeStamp(path, 'Supply check failed', e.message) }
+          try {
+            mintParams = await getMintParams(restUrl, chain, supplyParams.totalSupply, supplyParams.bondedRatio, blockParams.actualBlocksPerYear)
+          } catch (e) { timeStamp(path, 'Mint check failed', e.message) }
         }
+        const data = { ...current, ...authzParams, ...blockParams, ...stakingParams, ...supplyParams, ...mintParams }
         return _.mapKeys({ 
           ...data,
-          bondedTokens: bondedTokens && formatNumber(bondedTokens),
-          totalSupply: totalSupply && formatNumber(totalSupply),
-          blockTime,
-          blocksPerYear,
-          actualBlockTime,
-          actualBlocksPerYear,
-          unbondingTime,
-          maxValidators,
-          communityTax,
-          bondedRatio,
-          baseInflation,
-          estimatedApr,
-          calculatedApr
-        }, (value, key) => _.snakeCase(key))
+          bondedTokens: data.bondedTokens && formatNumber(data.bondedTokens),
+          totalSupply: data.totalSupply && formatNumber(data.totalSupply)
+        }, (_value, key) => _.snakeCase(key))
       } catch (error) {
-        timeStamp(chain.path, 'Update failed', error.message)
+        timeStamp(path, 'Update failed', error.message)
         return data
       }
     };
     return queue.add(request, { identifier: path });
   }
 
-  function formatNumber(number){
-    return format(number, {notation: 'fixed'})
-  }
-
-  function duration(epochs, epochIdentifier) {
-    const epoch = epochs.find((epoch) => epoch.identifier === epochIdentifier);
-    if (!epoch) {
-      return 0;
+  async function getAuthzParams(restUrl){
+    try { await got.get(restUrl + 'cosmos/authz/v1beta1/grants') } catch (error) {
+      if (error.response?.statusCode === 400) {
+        return {authz: true}
+      } else if (error.response?.statusCode === 501) {
+        return {authz: false}
+      }
     }
-
-    // Actually, the date type of golang protobuf is returned by the unit of seconds.
-    return parseInt(epoch.duration.replace("s", ""));
   }
 
-  async function osmosisParams(restUrl, totalSupply, bondedRatio) {
+  async function getBlockParams(restUrl){
+    const currentBlock = await got.get(restUrl + 'blocks/latest').json()
+    const currentBlockTime = new Date(currentBlock.block.header.time) / 1000
+    const currentBlockHeight = currentBlock.block.header.height
+    const prevBlock = await got.get(restUrl + 'blocks/' + (currentBlockHeight - 100)).json()
+    const prevBlockTime = new Date(prevBlock.block.header.time) / 1000
+    const prevBlockHeight = prevBlock.block.header.height
+    const actualBlockTime = (currentBlockTime - prevBlockTime) / (currentBlockHeight - prevBlockHeight)
+    const actualBlocksPerYear = (365 * 24 * 60 * 60) / actualBlockTime
+    return {
+      actualBlockTime,
+      actualBlocksPerYear
+    }
+  }
+
+  async function getStakingParams(restUrl){
+    const staking = await got.get(restUrl + 'cosmos/staking/v1beta1/params').json();
+    const unbondingTime = parseInt(staking.params.unbonding_time.replace('s', ''))
+    const maxValidators = staking.params.max_validators
+    const pool = await got.get(restUrl + 'cosmos/staking/v1beta1/pool').json();
+    const bondedTokens = bignumber(pool.pool.bonded_tokens);
+    return {
+      unbondingTime,
+      maxValidators,
+      bondedTokens
+    }
+  }
+
+  async function getSupplyParams(restUrl, chain, bondedTokens){
+    const { denom } = chain
+    const supply = await got.get(restUrl + 'cosmos/bank/v1beta1/supply/' + denom).json();
+    const totalSupply = bignumber(supply.amount.amount);
+    const bondedRatio = parseFloat(divide(bondedTokens, totalSupply))
+    return {
+      totalSupply,
+      bondedRatio
+    }
+  }
+
+  async function getMintParams(restUrl, chain, totalSupply, bondedRatio, actualBlocksPerYear){
+    const path = chain.path
+    if (path === 'osmosis') {
+      return await getOsmosisParams(restUrl, totalSupply, bondedRatio)
+    } else if (path === 'sifchain') {
+      const aprRequest = await got.get(
+        "https://data.sifchain.finance/beta/validator/stakingRewards"
+      ).json();
+      return {
+        calculatedApr: aprRequest.rate
+      }
+    } else {
+      const mint = await got.get(restUrl + 'cosmos/mint/v1beta1/params').json();
+      const blocksPerYear = parseInt(mint.params.blocks_per_year)
+      const blockTime = (365 * 24 * 60 * 60) / blocksPerYear
+      const distribution = await got.get(restUrl + 'cosmos/distribution/v1beta1/params').json();
+      const communityTax = parseFloat(distribution.params.community_tax)
+      const req = await got.get(restUrl + 'cosmos/mint/v1beta1/inflation').json()
+      const baseInflation = parseFloat(req.inflation);
+      let estimatedApr, calculatedApr
+      if(baseInflation > 0 && bondedRatio){
+        estimatedApr = baseInflation > 0 ? ((baseInflation / bondedRatio) - communityTax) : 0
+        calculatedApr = estimatedApr * (actualBlocksPerYear / blocksPerYear)
+      }
+      return {
+        blocksPerYear,
+        blockTime,
+        communityTax,
+        baseInflation,
+        estimatedApr,
+        calculatedApr
+      }
+    }
+  }
+
+  async function getOsmosisParams(restUrl, totalSupply, bondedRatio) {
     const mintParams = await got.get(
       restUrl + "/osmosis/mint/v1beta1/params"
     ).json();
@@ -153,6 +180,20 @@ function ChainMonitor() {
       baseInflation,
       calculatedApr
     };
+  }
+
+  function formatNumber(number) {
+    return format(number, { notation: 'fixed' })
+  }
+
+  function duration(epochs, epochIdentifier) {
+    const epoch = epochs.find((epoch) => epoch.identifier === epochIdentifier);
+    if (!epoch) {
+      return 0;
+    }
+
+    // Actually, the date type of golang protobuf is returned by the unit of seconds.
+    return parseInt(epoch.duration.replace("s", ""));
   }
 
   return {
