@@ -80,11 +80,7 @@ function ChainMonitor() {
       height,
       time,
       signatures: signatures.map(signature => {
-        const { validator_address, timestamp } = signature
-        return {
-          validator_address,
-          timestamp
-        }
+        return signature.validator_address
       })
     };
   }

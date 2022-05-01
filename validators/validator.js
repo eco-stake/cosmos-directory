@@ -28,14 +28,14 @@ export class Validator {
   missedBlocks(){
     const hexAddress = this.hexAddress()
     return this.blocks.filter(block => {
-      return !block.signatures.find(el => el.validator_address === hexAddress)
+      return !block.signatures.find(el => el === hexAddress)
     })
   }
 
   signedBlocks(){
     const hexAddress = this.hexAddress()
     return this.blocks.filter(block => {
-      return block.signatures.find(el => el.validator_address === hexAddress)
+      return block.signatures.find(el => el === hexAddress)
     })
   }
 

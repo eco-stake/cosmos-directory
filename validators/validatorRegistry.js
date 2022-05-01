@@ -20,9 +20,10 @@ function ValidatorRegistry(client) {
   }
 
   async function getBlocks(chainName){
-    return (await client.json.get('chains:' + chainName, {
+    const data = await client.json.get('chains:' + chainName, {
       path: [ '$.blocks' ]
-    }))[0]
+    })
+    return data && data[0]
   }
 
   async function getChainValidators(chainName) {
