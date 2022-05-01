@@ -89,15 +89,15 @@ async function queueChainCheck(client, registry, monitor) {
     queueHealthCheck(client, chainRegistry, healthMonitor)
   }
 
-  const chainMonitor = ChainMonitor()
-  await chainMonitor.refreshChains(client, chains)
-  if (CHAIN_REFRESH_INTERVAL > 0) {
-    queueChainCheck(client, chainRegistry, chainMonitor)
-  }
-
   const validatorMonitor = ValidatorMonitor()
   await validatorMonitor.refreshValidators(client, chains)
   if (VALIDATOR_REFRESH_INTERVAL > 0) {
     queueValidatorCheck(client, chainRegistry, validatorMonitor)
+  }
+
+  const chainMonitor = ChainMonitor()
+  await chainMonitor.refreshChains(client, chains)
+  if (CHAIN_REFRESH_INTERVAL > 0) {
+    queueChainCheck(client, chainRegistry, chainMonitor)
   }
 })();

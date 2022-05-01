@@ -8,7 +8,7 @@ import { UniqueQueue } from '../uniqueQueue.js';
 const STORE_BLOCKS=100
 
 function ChainMonitor() {
-  const queue = new PQueue({ concurrency: 20, queueClass: UniqueQueue });
+  const queue = new PQueue({ concurrency: 10, queueClass: UniqueQueue });
 
   async function refreshChains(client, chains) {
     timeStamp('Running chain update');
@@ -20,9 +20,9 @@ function ChainMonitor() {
 
         const current = await client.json.get('chains:' + chain.path, '$') || {}
 
-        let chainBlocks = await getChainBlocks(restUrl, chain, current.blocks || []);
+        let chainParams = await getChainParams(restUrl, chain, current.blocks, current.params || {});
 
-        let chainParams = await getChainParams(restUrl, chain, chainBlocks, current.params || {});
+        let chainBlocks = await getChainBlocks(restUrl, chain, current.blocks || []);
 
         await client.json.set('chains:' + chain.path, '$', {
           chainId: chain.chainId,
