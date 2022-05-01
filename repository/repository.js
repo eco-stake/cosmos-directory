@@ -85,6 +85,8 @@ function Repository(client, url, branch, opts) {
 
     await client.json.set([name, 'paths'].join(':'), '$', _.compact(allData).map(el => el.path))
 
+    if(opts.storeMeta) await opts.storeMeta(name, _.compact(allData))
+
     const commit = await latestCommit()
     await client.json.set([name, 'commit'].join(':'), '$', commit)
     
