@@ -35,7 +35,7 @@ function ValidatorsController(registry) {
       const validators = await registry.getRegistryValidators()
       renderJson(ctx, {
         repository: await repositoryResponse(),
-        validators: validators.map(validator => {
+        validators: _.shuffle(validators).map(validator => {
           return validatorSummary(validator);
         })
       });
