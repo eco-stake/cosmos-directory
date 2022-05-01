@@ -3,7 +3,6 @@ import got from 'got';
 import _ from 'lodash'
 import Agent from 'agentkeepalive'
 import { timeStamp, debugLog } from '../utils.js';
-import { UniqueQueue } from '../uniqueQueue.js';
 
 const ALLOWED_DELAY = 30 * 60
 const ALLOWED_ERRORS = 10
@@ -15,11 +14,7 @@ function HealthMonitor() {
     http: new Agent({ maxSockets: 10 }),
     https: new Agent.HttpsAgent({ maxSockets: 10 })
   }
-  const queue = new PQueue({ concurrency: 10, queueClass: UniqueQueue });
-
-  function pending(address) {
-    return queue.sizeBy({ address }) > 0;
-  }
+  const queue = new PQueue({ concurrency: 10 });
 
   async function refreshApis(client, chains) {
     timeStamp('Running health checks');
@@ -29,8 +24,6 @@ function HealthMonitor() {
         const urls = apis.apis[type] || [];
         const health = apis.health[type] || {};
         const updated = await Promise.all([...urls].map(async (url) => {
-          if (pending(url.address)) return;
-
           const urlHealth = health[url.address] || {};
           return await checkUrl(url, type, chain, { ...urlHealth });
         }));
@@ -144,8 +137,7 @@ function HealthMonitor() {
   }
 
   return {
-    refreshApis,
-    pending
+    refreshApis
   };
 }
 

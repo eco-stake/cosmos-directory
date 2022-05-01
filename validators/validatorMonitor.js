@@ -3,7 +3,6 @@ import got from 'got';
 import _ from 'lodash'
 import Agent from 'agentkeepalive'
 import { debugLog, executeSync, timeStamp } from '../utils.js';
-import { UniqueQueue } from '../uniqueQueue.js';
 
 const TIMEOUT = 20000
 
@@ -12,7 +11,7 @@ function ValidatorMonitor() {
     http: new Agent({ maxSockets: 100 }),
     https: new Agent.HttpsAgent({ maxSockets: 100 })
   }
-  const queue = new PQueue({ concurrency: 2, queueClass: UniqueQueue });
+  const queue = new PQueue({ concurrency: 2 });
 
   async function refreshValidators(client, chains) {
     timeStamp('Running validator update');
