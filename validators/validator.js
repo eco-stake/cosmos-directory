@@ -11,7 +11,7 @@ export class Validator {
     this.address = this.data.operator_address || this.registryData.address
     this.moniker = this.data.description?.moniker
     this.identity = this.data.description?.identity || this.registryData.profile?.identity
-    this.blocks = blocks
+    this.blocks = blocks || []
   }
 
   hexAddress(){
