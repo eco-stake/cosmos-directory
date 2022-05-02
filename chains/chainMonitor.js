@@ -66,7 +66,7 @@ function ChainMonitor() {
         agent: agent
       })
     } catch (error) {
-      if (error.response?.statusCode === 400) {
+      if ([400, 500].includes(error.response?.statusCode)) {
         return { authz: true }
       } else if (error.response?.statusCode === 501) {
         return { authz: false }
