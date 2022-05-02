@@ -28,7 +28,7 @@ function ValidatorRegistry(client) {
       keys.push(`blocks:${chainName}#${parseInt(latest.height) - (i + 1)}`)
     }
     let blocks = await client.json.mGet(keys, '$')
-    blocks = [latest, ...blocks.map(el => el[0])]
+    blocks = [latest, ...blocks.map(el => el && el[0])]
     return _.compact(blocks).sort((a, b) => {
       return b.height - a.height
     })
