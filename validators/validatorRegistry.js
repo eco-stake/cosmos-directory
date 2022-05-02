@@ -23,12 +23,13 @@ function ValidatorRegistry(client) {
     const latest = await client.json.get('blocks:' + chainName, '$')
     if(!latest) return []
 
-    let blocks = [latest]
-    for (let i = 0; i < 100; i++) {
-      const block = await client.json.get(`blocks:${chainName}#${parseInt(latest.height) - (i + 1)}`, '$')
-      if(block) blocks.push(block)
+    const keys = []
+    for (let i = 0; i < 99; i++) {
+      keys.push(`blocks:${chainName}#${parseInt(latest.height) - (i + 1)}`)
     }
-    return blocks.sort((a, b) => {
+    let blocks = await client.json.mGet(keys, '$')
+    blocks = [latest, ...blocks.map(el => el[0])]
+    return _.compact(blocks).sort((a, b) => {
       return b.height - a.height
     })
   }
