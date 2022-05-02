@@ -25,7 +25,7 @@ export class RegistryValidator {
 
   getDataset(dataset){
     dataset = ['path'].includes(dataset) ? undefined : dataset
-    return dataset && data[dataset]
+    return dataset && this.data[dataset]
   }
 
   toJSON(){
