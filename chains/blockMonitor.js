@@ -1,12 +1,17 @@
 import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
+import Agent from 'agentkeepalive'
 import { debugLog, timeStamp } from '../utils.js';
 import { UniqueQueue } from '../uniqueQueue.js';
 
 const STORE_BLOCKS=100
 
 function BlockMonitor() {
+  const agent = {
+    http: new Agent({ maxSockets: 50 }),
+    https: new Agent.HttpsAgent({ maxSockets: 50 })
+  }
   const queue = new PQueue({ concurrency: 10, queueClass: UniqueQueue });
 
   async function refreshChains(client, chains) {
@@ -27,9 +32,11 @@ function BlockMonitor() {
 
   async function updateChainBlocks(client, restUrl, chain){
     try {
-      const latestBlock = await got.get(
-        restUrl + "/blocks/latest"
-      ).json();
+      const latestBlock = await got.get(restUrl + "/blocks/latest", {
+        timeout: { request: 5000 },
+        retry: { limit: 3 },
+        agent: agent
+      }).json();
       const latestHeight = latestBlock.block.header.height
       await client.json.set(`blocks:${chain.path}`, '$', processBlock(latestBlock))
       for (let i = 0; i < STORE_BLOCKS; i++) {
@@ -37,7 +44,11 @@ function BlockMonitor() {
         let block = await client.json.get(`blocks:${chain.path}#${height}`, '$')
         if(!block || !block.height){
           debugLog(chain.path, 'Caching height', height)
-          const block = await got.get(restUrl + "/blocks/" + height).json();
+          const block = await got.get(restUrl + "/blocks/" + height, {
+            timeout: { request: 5000 },
+            retry: { limit: 3 },
+            agent: agent
+          }).json();
           await client.json.set(`blocks:${chain.path}#${height}`, '$', processBlock(block))
           await client.expire(`blocks:${chain.path}#${height}`, 60*60)
         }else{

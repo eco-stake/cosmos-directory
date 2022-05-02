@@ -8,8 +8,8 @@ const TIMEOUT = 20000
 
 function ValidatorMonitor() {
   const agent = {
-    http: new Agent({ maxSockets: 100 }),
-    https: new Agent.HttpsAgent({ maxSockets: 100 })
+    http: new Agent({ maxSockets: 150 }),
+    https: new Agent.HttpsAgent({ maxSockets: 150 })
   }
   const queue = new PQueue({ concurrency: 2 });
 

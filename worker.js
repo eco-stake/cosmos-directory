@@ -13,12 +13,14 @@ const repoRefreshSeconds = parseInt(process.env.REPO_REFRESH || 900)
 const validatorUrl = process.env.VALIDATOR_URL || 'https://github.com/eco-stake/validator-registry'
 const validatorBranch = process.env.VALIDATOR_BRANCH || 'master'
 const validatorRefreshSeconds = parseInt(process.env.VALIDATOR_REFRESH || 900)
-const chainRefreshSeconds = parseInt(process.env.CHAIN_REFRESH || 60)
+const chainRefreshSeconds = parseInt(process.env.CHAIN_REFRESH || 60 * 5)
 const healthRefreshSeconds = parseInt(process.env.HEALTH_REFRESH || 10)
+const blockRefreshSeconds = parseInt(process.env.BLOCK_REFRESH || 60)
 const REPO_REFRESH_INTERVAL = 1000 * repoRefreshSeconds
 const VALIDATOR_REFRESH_INTERVAL = 1000 * validatorRefreshSeconds
 const CHAIN_REFRESH_INTERVAL = 1000 * chainRefreshSeconds
 const HEALTH_REFRESH_INTERVAL = 1000 * healthRefreshSeconds
+const BLOCK_REFRESH_INTERVAL = 1000 * blockRefreshSeconds
 
 console.log("Using config:", {
   chainUrl,
@@ -68,7 +70,7 @@ async function queueBlockCheck(client, registry, monitor) {
     const chains = await registry.getChains()
     await monitor.refreshChains(client, chains)
     queueBlockCheck(client, registry, monitor)
-  }, CHAIN_REFRESH_INTERVAL)
+  }, BLOCK_REFRESH_INTERVAL)
 }
 
 (async () => {
@@ -112,7 +114,7 @@ async function queueBlockCheck(client, registry, monitor) {
 
   const blockMonitor = BlockMonitor()
   await blockMonitor.refreshChains(client, chains)
-  if (CHAIN_REFRESH_INTERVAL > 0) {
+  if (BLOCK_REFRESH_INTERVAL > 0) {
     queueBlockCheck(client, chainRegistry, blockMonitor)
   }
 })();
