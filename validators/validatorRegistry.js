@@ -47,12 +47,13 @@ function ValidatorRegistry(client) {
   }
 
   async function getChainValidator(chainName, address, registryValidator) {
-    const chainData = (await client.json.get('validators:' + chainName, {
+    const chainData = await client.json.get('validators:' + chainName, {
       path: [
         '$.validators.' + address,
       ]
-    }))[0]
-    return buildValidator(chainName, chainData, registryValidator, await getBlocks(chainName))
+    })
+    if(!chainData) return
+    return buildValidator(chainName, chainData[0], registryValidator, await getBlocks(chainName))
   }
 
   function buildValidator(chainName, chainData, registryValidator, blocks){
