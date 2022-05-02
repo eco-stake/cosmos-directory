@@ -47,10 +47,15 @@ function ValidatorMonitor() {
           return getValidators(url, 100, {}, nextKey);
         })
         const validators = pages.map((el) => el.validators).flat()
-        validators.filter(el => el.status === 'BOND_STATUS_BONDED').slice().sort((a, b) => {
-          return parseInt(b.tokens) - parseInt(a.tokens)
-        }).forEach((validator, index) => {
-          validator.rank = index + 1
+        const active = validators.filter(el => el.status === 'BOND_STATUS_BONDED').slice()
+        const inactive = validators.filter(el => el.status !== 'BOND_STATUS_BONDED').slice()
+        let i = 0;
+        [active, inactive].forEach((group) => {
+          group.sort((a, b) => {
+            return parseInt(b.tokens) - parseInt(a.tokens)
+          }).forEach((validator) => {
+            validator.rank = ++i
+          })
         })
         const calls = validators.map(validator => {
           return async () => {
