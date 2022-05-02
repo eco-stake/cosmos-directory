@@ -5,6 +5,7 @@ import HealthMonitor from './status/healthMonitor.js';
 import ValidatorMonitor from './validators/validatorMonitor.js';
 import { redisClient } from "./redisClient.js";
 import ChainMonitor from "./chains/chainMonitor.js";
+import BlockMonitor from "./chains/blockMonitor.js";
 
 const chainUrl = process.env.CHAIN_URL || 'https://github.com/cosmos/chain-registry'
 const chainBranch = process.env.CHAIN_BRANCH || 'master'
@@ -62,6 +63,14 @@ async function queueChainCheck(client, registry, monitor) {
   }, CHAIN_REFRESH_INTERVAL)
 }
 
+async function queueBlockCheck(client, registry, monitor) {
+  setTimeout(async () => {
+    const chains = await registry.getChains()
+    await monitor.refreshChains(client, chains)
+    queueBlockCheck(client, registry, monitor)
+  }, CHAIN_REFRESH_INTERVAL)
+}
+
 (async () => {
   const client = await redisClient();
 
@@ -99,5 +108,11 @@ async function queueChainCheck(client, registry, monitor) {
   await chainMonitor.refreshChains(client, chains)
   if (CHAIN_REFRESH_INTERVAL > 0) {
     queueChainCheck(client, chainRegistry, chainMonitor)
+  }
+
+  const blockMonitor = BlockMonitor()
+  await blockMonitor.refreshChains(client, chains)
+  if (CHAIN_REFRESH_INTERVAL > 0) {
+    queueBlockCheck(client, chainRegistry, blockMonitor)
   }
 })();

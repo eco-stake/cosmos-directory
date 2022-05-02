@@ -3,16 +3,13 @@ import got from 'got';
 import _ from 'lodash'
 import {bignumber, divide, format} from 'mathjs'
 import { debugLog, timeStamp } from '../utils.js';
-import { UniqueQueue } from '../uniqueQueue.js';
-
-const STORE_BLOCKS=100
 
 function ChainMonitor() {
-  const queue = new PQueue({ concurrency: 10, queueClass: UniqueQueue });
+  const queue = new PQueue({ concurrency: 10 });
 
   async function refreshChains(client, chains) {
     timeStamp('Running chain update');
-    [...chains].map((chain) => {
+    await Promise.all([...chains].map((chain) => {
       const request = async () => {
         const apis = await chain.apis('rest')
         const restUrl = apis.bestAddress('rest')
@@ -20,76 +17,25 @@ function ChainMonitor() {
 
         const current = await client.json.get('chains:' + chain.path, '$') || {}
 
-        let chainParams = await getChainParams(restUrl, chain, current.blocks, current.params || {});
-
-        let chainBlocks = await getChainBlocks(restUrl, chain, current.blocks || []);
+        let chainParams = await getChainParams(restUrl, chain, current.params || {});
 
         await client.json.set('chains:' + chain.path, '$', {
           chainId: chain.chainId,
           lastUpdated: Date.now(),
-          params: chainParams || current.params,
-          blocks: chainBlocks || current.blocks
+          params: chainParams || current.params
         });
         debugLog(chain.path, 'Chain update complete')
       };
       return queue.add(request, { identifier: chain.path });
-    });
-    debugLog('Chain update queued')
+    }));
+    debugLog('Chain update complete')
   }
 
-  async function getChainBlocks(restUrl, chain, current){
-    try {
-      const currentIndexed = current.reduce(
-        (a, v) => ({ ...a, [v.height]: v }),
-        {}
-      )
-      const latestBlock = await got.get(
-        restUrl + "/blocks/latest"
-      ).json();
-      const latestHeight = latestBlock.block.header.height
-      currentIndexed[latestHeight] = processBlock(latestBlock)
-      for (let i = 0; i < STORE_BLOCKS; i++) {
-        const height = latestHeight - (i + 1);
-        let block = currentIndexed[height]
-        if(!block || !block.height){
-          debugLog(chain.path, 'Caching height', height)
-          const block = await got.get(restUrl + "/blocks/" + height).json();
-          currentIndexed[height] = processBlock(block);
-          await new Promise(r => setTimeout(r, 100));
-        }else{
-          debugLog(chain.path, 'Already cached height', height)
-        }
-      }
-      return Array(STORE_BLOCKS).fill({}).map(function (_, i) {
-        const height = latestHeight - i;
-        return currentIndexed[height]
-      }).sort((a, b) => {
-        return b.height - a.height
-      })
-    } catch (error) {
-      timeStamp(chain.path, 'Block check failed', error.message)
-    }
-  }
-
-  function processBlock(block){
-    const { hash } = block.block_id;
-    const { height, time } = block.block.header;
-    const { signatures } = block.block.last_commit;
-    return {
-      hash,
-      height,
-      time,
-      signatures: signatures.map(signature => {
-        return signature.validator_address
-      })
-    };
-  }
-
-  async function getChainParams(restUrl, chain, blocks, current) {
+  async function getChainParams(restUrl, chain, current) {
     const { denom } = chain
     try {
       const authzParams = await getAuthzParams(restUrl)
-      const blockParams = getBlockParams(blocks)
+      const blockParams = await getBlockParams(restUrl, chain)
       const stakingParams = await getStakingParams(restUrl, chain)
       let supplyParams, mintParams
       if (denom) {
@@ -117,21 +63,21 @@ function ChainMonitor() {
     }
   }
 
-  function getBlockParams(blocks) {
-    if (!blocks || blocks.length < 10) return {}
-
-    const currentBlock = blocks[0]
-    const currentBlockTime = new Date(currentBlock.time) / 1000
-    const currentBlockHeight = currentBlock.height
-    const prevBlock = blocks[blocks.length - 1]
-    const prevBlockTime = new Date(prevBlock.time) / 1000
-    const prevBlockHeight = prevBlock.height
-    const actualBlockTime = (currentBlockTime - prevBlockTime) / (currentBlockHeight - prevBlockHeight)
-    const actualBlocksPerYear = (365 * 24 * 60 * 60) / actualBlockTime
-    return {
-      actualBlockTime,
-      actualBlocksPerYear
-    }
+  async function getBlockParams(restUrl, chain) {
+    try {
+      const currentBlock = await got.get(restUrl + 'blocks/latest').json()
+      const currentBlockTime = new Date(currentBlock.block.header.time) / 1000
+      const currentBlockHeight = currentBlock.block.header.height
+      const prevBlock = await got.get(restUrl + 'blocks/' + (currentBlockHeight - 100)).json()
+      const prevBlockTime = new Date(prevBlock.block.header.time) / 1000
+      const prevBlockHeight = prevBlock.block.header.height
+      const actualBlockTime = (currentBlockTime - prevBlockTime) / (currentBlockHeight - prevBlockHeight)
+      const actualBlocksPerYear = (365 * 24 * 60 * 60) / actualBlockTime
+      return {
+        actualBlockTime,
+        actualBlocksPerYear
+      }
+    } catch (e) { timeStamp(chain.path, 'Block check failed', e.message) }
   }
 
   async function getStakingParams(restUrl, chain) {

@@ -20,10 +20,17 @@ function ValidatorRegistry(client) {
   }
 
   async function getBlocks(chainName){
-    const data = await client.json.get('chains:' + chainName, {
-      path: [ '$.blocks' ]
+    const latest = await client.json.get('blocks:' + chainName, '$')
+    if(!latest) return []
+
+    let blocks = [latest]
+    for (let i = 0; i < 100; i++) {
+      const block = await client.json.get(`blocks:${chainName}#${parseInt(latest.height) - (i + 1)}`, '$')
+      if(block) blocks.push(block)
+    }
+    return blocks.sort((a, b) => {
+      return b.height - a.height
     })
-    return data && data[0]
   }
 
   async function getChainValidators(chainName) {
