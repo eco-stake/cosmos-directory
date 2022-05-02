@@ -12,7 +12,7 @@ function BlockMonitor() {
     http: new Agent({ maxSockets: 50 }),
     https: new Agent.HttpsAgent({ maxSockets: 50 })
   }
-  const queue = new PQueue({ concurrency: 10, queueClass: UniqueQueue });
+  const queue = new PQueue({ concurrency: 20, queueClass: UniqueQueue });
 
   async function refreshChains(client, chains) {
     timeStamp('Running block update');
@@ -51,6 +51,7 @@ function BlockMonitor() {
           }).json();
           await client.json.set(`blocks:${chain.path}#${height}`, '$', processBlock(block))
           await client.expire(`blocks:${chain.path}#${height}`, 60*60)
+          await new Promise(r => setTimeout(r, 1 * 1000));
         }else{
           debugLog(chain.path, 'Already cached height', height)
         }
