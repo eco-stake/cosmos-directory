@@ -102,13 +102,15 @@ async function queueBlockCheck(client, registry, monitor) {
   }
 
   const validatorMonitor = ValidatorMonitor()
-  await validatorMonitor.refreshValidators(client, chains)
+  const chainMonitor = ChainMonitor()
+  await Promise.all([
+    validatorMonitor.refreshValidators(client, chains),
+    chainMonitor.refreshChains(client, chains)
+  ])
+
   if (VALIDATOR_REFRESH_INTERVAL > 0) {
     queueValidatorCheck(client, chainRegistry, validatorMonitor)
   }
-
-  const chainMonitor = ChainMonitor()
-  await chainMonitor.refreshChains(client, chains)
   if (CHAIN_REFRESH_INTERVAL > 0) {
     queueChainCheck(client, chainRegistry, chainMonitor)
   }
