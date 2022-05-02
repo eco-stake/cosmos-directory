@@ -37,9 +37,10 @@ function ValidatorRegistry(client) {
     const data = await client.json.get('validators:' + chainName, '$') || {}
     const validators = data.validators || {}
     const mapping = await addressMapping()
+    const blocks = await getBlocks(chainName)
     return Promise.all(Object.values(validators).map(async data => {
       const registryValidator = await getRegistryValidatorFromAddress(data.operator_address, mapping)
-      const validator = buildValidator(chainName, data, registryValidator, await getBlocks(chainName))
+      const validator = buildValidator(chainName, data, registryValidator, blocks)
       return validator
     }))
   }
