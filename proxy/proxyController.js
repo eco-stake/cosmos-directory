@@ -11,7 +11,7 @@ const { createProxyServer } = httpProxy;
 const CACHED_REQUESTS = [ 
   {
     path: 'cosmos/staking/v1beta1/validators',
-    maxAge: 5 * 60
+    maxAge: 2 * 60
   },
   {
     path: 'cosmos/authz/v1beta1/grants',
@@ -35,18 +35,6 @@ const CACHED_REQUESTS = [
   },
   {
     path: new RegExp("cosmos/distribution/v1beta1/delegators/[\\w\\d]*/withdraw_address$"),
-    maxAge: 5 * 60
-  },
-  {
-    path: 'osmosis/mint/v1beta1/params',
-    maxAge: 60 * 60
-  },
-  {
-    path: 'osmosis/epochs/v1beta1/epochs',
-    maxAge: 5 * 60
-  },
-  {
-    path: 'osmosis/mint/v1beta1/epoch_provisions',
     maxAge: 5 * 60
   }
  ]
