@@ -30,7 +30,8 @@ console.log("Using config:", {
   validatorBranch,
   validatorRefreshSeconds,
   chainRefreshSeconds,
-  healthRefreshSeconds
+  healthRefreshSeconds,
+  blockRefreshSeconds
 })
 
 if(process.env.BUGSNAG_KEY){
