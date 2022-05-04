@@ -101,23 +101,21 @@ async function queueBlockCheck(client, registry, monitor) {
     queueHealthCheck(client, chainRegistry, healthMonitor)
   }
 
-  const validatorMonitor = ValidatorMonitor()
-  const chainMonitor = ChainMonitor()
-  await Promise.all([
-    validatorMonitor.refreshValidators(client, chains),
-    chainMonitor.refreshChains(client, chains)
-  ])
-
-  if (VALIDATOR_REFRESH_INTERVAL > 0) {
-    queueValidatorCheck(client, chainRegistry, validatorMonitor)
-  }
-  if (CHAIN_REFRESH_INTERVAL > 0) {
-    queueChainCheck(client, chainRegistry, chainMonitor)
-  }
-
   const blockMonitor = BlockMonitor()
   await blockMonitor.refreshChains(client, chains)
   if (BLOCK_REFRESH_INTERVAL > 0) {
     queueBlockCheck(client, chainRegistry, blockMonitor)
+  }
+
+  const validatorMonitor = ValidatorMonitor()
+  await validatorMonitor.refreshValidators(client, chains)
+  if (VALIDATOR_REFRESH_INTERVAL > 0) {
+    queueValidatorCheck(client, chainRegistry, validatorMonitor)
+  }
+
+  const chainMonitor = ChainMonitor()
+  await chainMonitor.refreshChains(client, chains)
+  if (CHAIN_REFRESH_INTERVAL > 0) {
+    queueChainCheck(client, chainRegistry, chainMonitor)
   }
 })();

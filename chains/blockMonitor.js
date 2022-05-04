@@ -1,72 +1,66 @@
 import PQueue from 'p-queue';
-import got from 'got';
 import _ from 'lodash'
-import Agent from 'agentkeepalive'
 import { debugLog, timeStamp } from '../utils.js';
-import { UniqueQueue } from '../uniqueQueue.js';
-
-const STORE_BLOCKS=100
+import { Client } from 'rpc-websockets'
+import { UniqueQueue } from '../uniqueQueue.js'
 
 function BlockMonitor() {
-  const agent = {
-    http: new Agent({ maxSockets: 50 }),
-    https: new Agent.HttpsAgent({ maxSockets: 50 })
-  }
+  const monitors = {}
   const queue = new PQueue({ concurrency: 20, queueClass: UniqueQueue });
 
   async function refreshChains(client, chains) {
     timeStamp('Running block update');
     [...chains].map((chain) => {
       const request = async () => {
-        const apis = await chain.apis('rest')
-        const restUrl = apis.bestAddress('rest')
-        if (!restUrl) return timeStamp(chain.path, 'No API URL')
+        let monitor = monitors[chain.path]
+        if(monitor) return
 
-        await updateChainBlocks(client, restUrl, chain);
-        debugLog(chain.path, 'Block update complete')
+        debugLog(chain.path, 'Websocket connecting')
+        const apis = await chain.apis('rpc')
+        const rpcUrl = apis.bestAddress('rpc')
+        if (!rpcUrl) return timeStamp(chain.path, 'No API URL')
+
+        let ws = new Client(rpcUrl.replace('http', 'ws') + 'websocket')
+        ws.on('open', function() {
+
+          ws.call('subscribe', { query: "tm.event='NewBlock'" })
+
+          ws.socket.addEventListener("message", ({data: message}) => {
+            message = JSON.parse(message)
+            if(message.result?.data?.type === 'tendermint/event/NewBlock'){
+              return setBlock(client, chain, message.result.data.value.block)
+            }
+          })
+
+          ws.on('close', function(){
+            timeStamp(chain.path, 'Websocket closed')
+            delete monitors[chain.path]
+          })
+        })
+        monitors[chain.path] = ws
       };
       return queue.add(request, { identifier: chain.path });
     });
     debugLog('Block update queued')
   }
 
-  async function updateChainBlocks(client, restUrl, chain){
+  async function setBlock(client, chain, block){
     try {
-      const latestBlock = await got.get(restUrl + "/blocks/latest", {
-        timeout: { request: 5000 },
-        retry: { limit: 3 },
-        agent: agent
-      }).json();
-      const latestHeight = latestBlock.block.header.height
-      await client.json.set(`blocks:${chain.path}`, '$', processBlock(latestBlock))
-      for (let i = 0; i < STORE_BLOCKS; i++) {
-        const height = latestHeight - (i + 1);
-        let block = await client.json.get(`blocks:${chain.path}#${height}`, '$')
-        if(!block || !block.height){
-          debugLog(chain.path, 'Caching height', height)
-          const block = await got.get(restUrl + "/blocks/" + height, {
-            timeout: { request: 5000 },
-            retry: { limit: 3 },
-            agent: agent
-          }).json();
-          await client.json.set(`blocks:${chain.path}#${height}`, '$', processBlock(block))
-          await client.expire(`blocks:${chain.path}#${height}`, 60*60)
-          await new Promise(r => setTimeout(r, 1 * 1000));
-        }else{
-          debugLog(chain.path, 'Already cached height', height)
-        }
-      }
+      const height = block.header.height
+      debugLog(chain.path, 'Caching height', height)
+      const processed = processBlock(block)
+      await client.json.set(`blocks:${chain.path}`, '$', processed)
+      await client.json.set(`blocks:${chain.path}#${height}`, '$', processed)
+      await client.expire(`blocks:${chain.path}#${height}`, 60 * 60)
     } catch (error) {
-      timeStamp(chain.path, 'Block check failed', error.message)
+      timeStamp(chain.path, 'Block update failed', error.message)
     }
   }
 
   function processBlock(block){
-    const { hash } = block.block_id;
-    const { height, time } = block.block.header;
-    const { signatures } = block.block.last_commit;
+    const { height, time } = block.header;
+    const { signatures } = block.last_commit;
     return {
-      hash,
       height: parseInt(height),
       time,
       signatures: signatures.map(signature => {

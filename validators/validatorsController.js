@@ -55,7 +55,7 @@ function ValidatorsController(registry) {
       let validatorAddress = ctx.params.validatorAddress
       let registryValidator = await registry.getRegistryValidatorFromAddress(validatorAddress)
       let validator = await registry.getChainValidator(chainName, validatorAddress, registryValidator)
-      renderJson(ctx, {
+      renderJson(ctx, validator && {
         name: chainName,
         validator: validator
       });
