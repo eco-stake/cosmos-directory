@@ -13,38 +13,40 @@ function BlockMonitor() {
     [...chains].map((chain) => {
       const request = async () => {
         let monitor = monitors[chain.path]
-        if(monitor) return
+        if (monitor) return
 
-        debugLog(chain.path, 'Websocket connecting')
         const apis = await chain.apis('rpc')
         const rpcUrl = apis.bestAddress('rpc')
         if (!rpcUrl) return timeStamp(chain.path, 'No API URL')
 
-        let ws = new Client(rpcUrl.replace('http', 'ws') + 'websocket')
-        ws.on('open', function() {
+        debugLog(chain.path, 'Websocket connecting')
 
+        let ws = new Client(rpcUrl.replace('http', 'ws') + 'websocket', { reconnect: false })
+        monitors[chain.path] = ws
+        ws.on('open', function () {
           ws.call('subscribe', { query: "tm.event='NewBlock'" })
 
-          ws.socket.addEventListener("message", ({data: message}) => {
-            message = JSON.parse(message)
-            if(message.result?.data?.type === 'tendermint/event/NewBlock'){
-              return setBlock(client, chain, message.result.data.value.block)
+          const readMessage = function ({ data: message }) {
+            message = JSON.parse(message);
+            if (message.result?.data?.type === 'tendermint/event/NewBlock') {
+              return setBlock(client, chain, message.result.data.value.block);
             }
-          })
+          }
+          ws.socket.addEventListener("message", readMessage)
 
-          ws.on('close', function(){
+          ws.on('close', function () {
             timeStamp(chain.path, 'Websocket closed')
+            ws.socket?.removeEventListener("message", readMessage)
             delete monitors[chain.path]
           })
         })
-        monitors[chain.path] = ws
       };
       return queue.add(request, { identifier: chain.path });
     });
     debugLog('Block update queued')
   }
 
-  async function setBlock(client, chain, block){
+  async function setBlock(client, chain, block) {
     try {
       const height = block.header.height
       debugLog(chain.path, 'Caching height', height)
@@ -57,7 +59,7 @@ function BlockMonitor() {
     }
   }
 
-  function processBlock(block){
+  function processBlock(block) {
     const { height, time } = block.header;
     const { signatures } = block.last_commit;
     return {
