@@ -15,7 +15,7 @@ const validatorBranch = process.env.VALIDATOR_BRANCH || 'master'
 const validatorRefreshSeconds = parseInt(process.env.VALIDATOR_REFRESH || 60 * 5)
 const chainRefreshSeconds = parseInt(process.env.CHAIN_REFRESH || 60 * 5)
 const healthRefreshSeconds = parseInt(process.env.HEALTH_REFRESH || 10)
-const blockRefreshSeconds = parseInt(process.env.BLOCK_REFRESH || 30)
+const blockRefreshSeconds = parseInt(process.env.BLOCK_REFRESH || 15)
 const REPO_REFRESH_INTERVAL = 1000 * repoRefreshSeconds
 const VALIDATOR_REFRESH_INTERVAL = 1000 * validatorRefreshSeconds
 const CHAIN_REFRESH_INTERVAL = 1000 * chainRefreshSeconds
@@ -102,7 +102,7 @@ async function queueBlockCheck(client, registry, monitor) {
   }
 
   const blockMonitor = BlockMonitor()
-  await blockMonitor.refreshChains(client, chains)
+  blockMonitor.refreshChains(client, chains)
   if (BLOCK_REFRESH_INTERVAL > 0) {
     queueBlockCheck(client, chainRegistry, blockMonitor)
   }

@@ -11,34 +11,38 @@ function BlockMonitor() {
   async function refreshChains(client, chains) {
     timeStamp('Running block update');
     [...chains].map((chain) => {
-      const request = async () => {
-        let monitor = monitors[chain.path]
-        if (monitor) return
+      const readMessage = function ({ data: message }) {
+        message = JSON.parse(message);
+        if (message.result?.data?.type === 'tendermint/event/NewBlock') {
+          return setBlock(client, chain, message.result.data.value.block);
+        }
+      }
 
+      const request = async () => {
         const apis = await chain.apis('rpc')
         const rpcUrl = apis.bestAddress('rpc')
         if (!rpcUrl) return timeStamp(chain.path, 'No API URL')
 
-        debugLog(chain.path, 'Websocket connecting')
+        let monitor = monitors[chain.path]
+        if (monitor) {
+          const reconnecting = monitor.reconnect && (monitor.max_reconnects > monitor.current_reconnects)
+          if((monitor.ready && monitor.socket) || reconnecting){
+            return
+          }else{
+            monitor.socket?.removeEventListener("message", readMessage)
+            try {
+              monitor.close()
+            } catch { }
+          }
+        }
 
-        let ws = new Client(rpcUrl.replace('http', 'ws') + 'websocket', { reconnect: false })
+        debugLog(chain.path, 'Websocket connecting')
+        let ws = new Client(rpcUrl.replace('http', 'ws') + 'websocket', { reconnect: true, max_reconnects: 3 })
         monitors[chain.path] = ws
         ws.on('open', function () {
           ws.call('subscribe', { query: "tm.event='NewBlock'" })
 
-          const readMessage = function ({ data: message }) {
-            message = JSON.parse(message);
-            if (message.result?.data?.type === 'tendermint/event/NewBlock') {
-              return setBlock(client, chain, message.result.data.value.block);
-            }
-          }
           ws.socket.addEventListener("message", readMessage)
-
-          ws.on('close', function () {
-            timeStamp(chain.path, 'Websocket closed')
-            ws.socket?.removeEventListener("message", readMessage)
-            delete monitors[chain.path]
-          })
         })
       };
       return queue.add(request, { identifier: chain.path });
