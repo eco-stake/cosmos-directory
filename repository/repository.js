@@ -73,8 +73,14 @@ function Repository(client, url, branch, opts) {
       .map((item) => item.name);
 
     const allData = await Promise.all(directories.map(async dir => {
-      if (dir.startsWith('.') || exclude.includes(dir))
+      if (dir.startsWith('.') || exclude.includes(dir)) {
         return;
+      }
+
+      const path = join(repoDir, dir);
+      if(opts.require && !fs.existsSync(join(path, opts.require))){
+        return
+      }
 
       const data = buildData(dir);
 
