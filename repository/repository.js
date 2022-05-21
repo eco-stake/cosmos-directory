@@ -73,8 +73,14 @@ function Repository(client, url, branch, opts) {
       .map((item) => item.name);
 
     const allData = await Promise.all(directories.map(async dir => {
-      if (dir.startsWith('.') || exclude.includes(dir))
+      if (dir.startsWith('.') || exclude.includes(dir)) {
         return;
+      }
+
+      const path = join(repoDir, dir);
+      if(opts.require && !fs.existsSync(join(path, opts.require))){
+        return
+      }
 
       const data = buildData(dir);
 
@@ -84,6 +90,8 @@ function Repository(client, url, branch, opts) {
     }, {}));
 
     await client.json.set([name, 'paths'].join(':'), '$', _.compact(allData).map(el => el.path))
+
+    if(opts.storeMeta) await opts.storeMeta(name, _.compact(allData))
 
     const commit = await latestCommit()
     await client.json.set([name, 'commit'].join(':'), '$', commit)

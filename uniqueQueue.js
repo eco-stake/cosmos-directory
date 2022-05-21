@@ -4,11 +4,15 @@ export class UniqueQueue {
   }
 
   enqueue(run, options) {
-    const runData = {
-      identifier: options.identifier,
-      run: run
-    };
-    return this._queue.push(runData);
+    if(!this.filter(options).length){
+      const runData = {
+        identifier: options.identifier,
+        run: run
+      };
+      return this._queue.push(runData);
+    }else{
+      return this._queue
+    }
   }
 
   dequeue() {

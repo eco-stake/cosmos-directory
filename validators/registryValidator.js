@@ -1,39 +1,48 @@
 import _ from "lodash"
 
-function RegistryValidator(registryData) {
-  const { path, profile, chains } = registryData
+export class RegistryValidator {
+  constructor(data){
+    this.data = data
+    this.path = data.path
+    this.profile = data.profile
+    this.name = this.profile.name
+    this.identity = this.profile.identity
+    this.chains = data.chains.chains
+    this.validators = {}
+  }
 
-  function validatorForChain(chainName, chainValidators){
-    const chain = chains.chains.find(el => el.name === chainName)
-    if (!chain) return
+  getChain(chainName){
+    return this.chains.find(el => el.name === chainName)
+  }
 
-    const { address } = chain
-    const chainData = chainValidators[address] || {}
-    const moniker = chainData.description?.moniker
-    const identity = chainData.description?.identity || profile.identity
+  getValidator(chainName){
+    return this.validators[chainName]
+  }
+
+  setValidator(chainName, validator){
+    return this.validators[chainName] = validator
+  }
+
+  getDataset(dataset){
+    dataset = ['path'].includes(dataset) ? undefined : dataset
+    return dataset && this.data[dataset]
+  }
+
+  toJSON(){
+    const { path, name, identity, data } = this
     return {
       path,
-      name: profile.name,
-      moniker,
+      name,
       identity,
-      address,
-      ..._.omit(chain, 'name'),
-      ...chainData
+      ...data,
+      chains: this.chains.map(chain => {
+        const validator = this.validators[chain.name]
+        return {
+          ...chain,
+          ...validator?.toJSON()
+        }
+      })
     }
-  }
-
-  function getDataset(dataset){
-    dataset = ['path'].includes(dataset) ? undefined : dataset
-    return dataset && registryData[dataset]
-  }
-
-  return {
-    path,
-    name: profile.name,
-    identity: profile.identity,
-    ...registryData,
-    validatorForChain,
-    getDataset
   }
 }
 

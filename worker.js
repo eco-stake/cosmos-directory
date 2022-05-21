@@ -5,19 +5,22 @@ import HealthMonitor from './status/healthMonitor.js';
 import ValidatorMonitor from './validators/validatorMonitor.js';
 import { redisClient } from "./redisClient.js";
 import ChainMonitor from "./chains/chainMonitor.js";
+import BlockMonitor from "./chains/blockMonitor.js";
 
 const chainUrl = process.env.CHAIN_URL || 'https://github.com/cosmos/chain-registry'
 const chainBranch = process.env.CHAIN_BRANCH || 'master'
 const repoRefreshSeconds = parseInt(process.env.REPO_REFRESH || 900)
 const validatorUrl = process.env.VALIDATOR_URL || 'https://github.com/eco-stake/validator-registry'
 const validatorBranch = process.env.VALIDATOR_BRANCH || 'master'
-const validatorRefreshSeconds = parseInt(process.env.VALIDATOR_REFRESH || 900)
-const chainRefreshSeconds = parseInt(process.env.CHAIN_REFRESH || 1800)
+const validatorRefreshSeconds = parseInt(process.env.VALIDATOR_REFRESH || 60 * 5)
+const chainRefreshSeconds = parseInt(process.env.CHAIN_REFRESH || 60 * 5)
 const healthRefreshSeconds = parseInt(process.env.HEALTH_REFRESH || 10)
+const blockRefreshSeconds = parseInt(process.env.BLOCK_REFRESH || 15)
 const REPO_REFRESH_INTERVAL = 1000 * repoRefreshSeconds
 const VALIDATOR_REFRESH_INTERVAL = 1000 * validatorRefreshSeconds
 const CHAIN_REFRESH_INTERVAL = 1000 * chainRefreshSeconds
 const HEALTH_REFRESH_INTERVAL = 1000 * healthRefreshSeconds
+const BLOCK_REFRESH_INTERVAL = 1000 * blockRefreshSeconds
 
 console.log("Using config:", {
   chainUrl,
@@ -27,7 +30,8 @@ console.log("Using config:", {
   validatorBranch,
   validatorRefreshSeconds,
   chainRefreshSeconds,
-  healthRefreshSeconds
+  healthRefreshSeconds,
+  blockRefreshSeconds
 })
 
 if(process.env.BUGSNAG_KEY){
@@ -62,11 +66,26 @@ async function queueChainCheck(client, registry, monitor) {
   }, CHAIN_REFRESH_INTERVAL)
 }
 
+async function queueBlockCheck(client, registry, monitor) {
+  setTimeout(async () => {
+    const chains = await registry.getChains()
+    await monitor.refreshChains(client, chains)
+    queueBlockCheck(client, registry, monitor)
+  }, BLOCK_REFRESH_INTERVAL)
+}
+
 (async () => {
   const client = await redisClient();
 
-  const chainRepo = Repository(client, chainUrl, chainBranch, { exclude: ['testnets'] })
-  const validatorRepo = Repository(client, validatorUrl, validatorBranch, { exclude: [] })
+  const chainRepo = Repository(client, chainUrl, chainBranch, { exclude: ['testnets'], require: 'chain.json' })
+  const validatorRepo = Repository(client, validatorUrl, validatorBranch, { exclude: [], require: 'chains.json', storeMeta: async (name, allData) => {
+    await client.json.set([name, 'addresses'].join(':'), '$', allData.reduce((sum, validator) => {
+      for(const chain of validator.chains.chains){
+        sum[chain.address] = validator.path
+      }
+      return sum
+    }, {}))
+  } })
   await chainRepo.refresh()
   setInterval(() => chainRepo.refresh(), REPO_REFRESH_INTERVAL)
 
@@ -82,15 +101,21 @@ async function queueChainCheck(client, registry, monitor) {
     queueHealthCheck(client, chainRegistry, healthMonitor)
   }
 
-  const chainMonitor = ChainMonitor()
-  await chainMonitor.refreshChains(client, chains)
-  if (CHAIN_REFRESH_INTERVAL > 0) {
-    queueChainCheck(client, chainRegistry, chainMonitor)
+  const blockMonitor = BlockMonitor()
+  blockMonitor.refreshChains(client, chains)
+  if (BLOCK_REFRESH_INTERVAL > 0) {
+    queueBlockCheck(client, chainRegistry, blockMonitor)
   }
 
   const validatorMonitor = ValidatorMonitor()
   await validatorMonitor.refreshValidators(client, chains)
   if (VALIDATOR_REFRESH_INTERVAL > 0) {
     queueValidatorCheck(client, chainRegistry, validatorMonitor)
+  }
+
+  const chainMonitor = ChainMonitor()
+  await chainMonitor.refreshChains(client, chains)
+  if (CHAIN_REFRESH_INTERVAL > 0) {
+    queueChainCheck(client, chainRegistry, chainMonitor)
   }
 })();

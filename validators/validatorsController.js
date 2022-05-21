@@ -3,27 +3,16 @@ import _ from 'lodash';
 import { renderJson } from '../utils.js';
 
 function ValidatorsController(registry) {
-  async function validatorResponse(validator, summarize) {
-    let chains = validator.chains.chains
-    if(summarize){
-      chains = chains.map(el => _.pick(el, ['name', 'address', 'restake']))
-      chains = chains.map(chain => {
-        return {
-          ...chain,
-          restake: chain.restake?.address ? chain.restake.address : false
-        }
-      }, {})
-    }else{
-      chains = await Promise.all(chains.map(async chain => {
-        const chainValidator = await registry.getChainValidator(chain.name, chain.address)
-        return {
-          ...chain,
-          ...chainValidator
-        }
-      }))
-    }
+  function validatorSummary(validator) {
+    let chains = validator.chains.map(chain => {
+      chain = _.pick(chain, ['name', 'address', 'restake'])
+      return {
+        ...chain,
+        restake: chain.restake?.address ? chain.restake.address : false
+      }
+    }, {})
     return {
-      ...validator,
+      ...validator.toJSON(),
       chains: chains
     };
   }
@@ -46,26 +35,42 @@ function ValidatorsController(registry) {
       const validators = await registry.getRegistryValidators()
       renderJson(ctx, {
         repository: await repositoryResponse(),
-        validators: await Promise.all(validators.map(async validator => {
-          return await validatorResponse(validator, true);
-        }))
+        validators: _.shuffle(validators).map(validator => {
+          return validatorSummary(validator);
+        })
       });
     });
 
     router.get('/chains/:chain', async (ctx, next) => {
       let chainName = ctx.params.chain
-      let validators = await registry.getAllValidators(chainName)
+      let validators = await registry.getChainValidators(chainName)
       renderJson(ctx, {
         name: chainName,
         validators: _.shuffle(validators)
       });
     });
 
-    router.get('/:validator', async (ctx, next) => {
-      const validator = await registry.getRegistryValidator(ctx.params.validator);
+    router.get('/chains/:chain/:validatorAddress', async (ctx, next) => {
+      let chainName = ctx.params.chain
+      let validatorAddress = ctx.params.validatorAddress
+      let registryValidator = await registry.getRegistryValidatorFromAddress(validatorAddress)
+      let validator = await registry.getChainValidator(chainName, validatorAddress, registryValidator)
       renderJson(ctx, validator && {
+        name: chainName,
+        validator: validator
+      });
+    });
+
+    router.get('/:validator', async (ctx, next) => {
+      const registryValidator = await registry.getRegistryValidator(ctx.params.validator);
+      if(registryValidator){
+        for (const chain of registryValidator.chains) {
+          await registry.getChainValidator(chain.name, chain.address, registryValidator)
+        }
+      }
+      renderJson(ctx, registryValidator && {
         repository: await repositoryResponse(),
-        validator: await validatorResponse(validator)
+        validator: registryValidator.toJSON()
       });
     });
 

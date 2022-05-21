@@ -3,7 +3,6 @@ import got from 'got';
 import _ from 'lodash'
 import Agent from 'agentkeepalive'
 import { timeStamp, debugLog } from '../utils.js';
-import { UniqueQueue } from '../uniqueQueue.js';
 
 const ALLOWED_DELAY = 30 * 60
 const ALLOWED_ERRORS = 10
@@ -15,11 +14,7 @@ function HealthMonitor() {
     http: new Agent({ maxSockets: 10 }),
     https: new Agent.HttpsAgent({ maxSockets: 10 })
   }
-  const queue = new PQueue({ concurrency: 10, queueClass: UniqueQueue });
-
-  function pending(address) {
-    return queue.sizeBy({ address }) > 0;
-  }
+  const queue = new PQueue({ concurrency: 10 });
 
   async function refreshApis(client, chains) {
     timeStamp('Running health checks');
@@ -29,8 +24,6 @@ function HealthMonitor() {
         const urls = apis.apis[type] || [];
         const health = apis.health[type] || {};
         const updated = await Promise.all([...urls].map(async (url) => {
-          if (pending(url.address)) return;
-
           const urlHealth = health[url.address] || {};
           return await checkUrl(url, type, chain, { ...urlHealth });
         }));
@@ -79,16 +72,17 @@ function HealthMonitor() {
       finalAddress = new URL(response.url).href.replace(regex, '').replace(/\/$|$/, '/');
       ({ error, blockTime, blockHeight } = checkHeader(type, data, chain.chainId));
     }else{
-      ({ timings } = error)
+      ({ timings, response } = error)
     }
     const responseTime = timings?.phases?.total
 
-    let { lastError, lastErrorAt, available } = urlHealth;
+    let { lastError, lastErrorAt, available, rateLimited } = urlHealth;
     let errorCount = urlHealth.errorCount || 0;
     if (error) {
       errorCount++;
       lastError = error.message;
       lastErrorAt = Date.now();
+      rateLimited = rateLimited || (response?.statusCode === 429)
     } else if (errorCount > 0) {
       const currentTime = Date.now();
       const cooldownDate = (currentTime - 1000 * ERROR_COOLDOWN);
@@ -98,7 +92,7 @@ function HealthMonitor() {
     }
 
     let nowAvailable = false;
-    if (errorCount <= ALLOWED_ERRORS) {
+    if (errorCount <= ALLOWED_ERRORS && !rateLimited) {
       nowAvailable = !error || !!urlHealth.available;
     }
     if (available && !nowAvailable) {
@@ -115,6 +109,7 @@ function HealthMonitor() {
       lastError,
       lastErrorAt,
       errorCount,
+      rateLimited,
       available: nowAvailable,
       blockHeight: blockHeight,
       blockTime: blockTime,
@@ -144,8 +139,7 @@ function HealthMonitor() {
   }
 
   return {
-    refreshApis,
-    pending
+    refreshApis
   };
 }
 
