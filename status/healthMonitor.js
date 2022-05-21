@@ -72,16 +72,17 @@ function HealthMonitor() {
       finalAddress = new URL(response.url).href.replace(regex, '').replace(/\/$|$/, '/');
       ({ error, blockTime, blockHeight } = checkHeader(type, data, chain.chainId));
     }else{
-      ({ timings } = error)
+      ({ timings, response } = error)
     }
     const responseTime = timings?.phases?.total
 
-    let { lastError, lastErrorAt, available } = urlHealth;
+    let { lastError, lastErrorAt, available, rateLimited } = urlHealth;
     let errorCount = urlHealth.errorCount || 0;
     if (error) {
       errorCount++;
       lastError = error.message;
       lastErrorAt = Date.now();
+      rateLimited = rateLimited || (response?.statusCode === 429)
     } else if (errorCount > 0) {
       const currentTime = Date.now();
       const cooldownDate = (currentTime - 1000 * ERROR_COOLDOWN);
@@ -91,7 +92,7 @@ function HealthMonitor() {
     }
 
     let nowAvailable = false;
-    if (errorCount <= ALLOWED_ERRORS) {
+    if (errorCount <= ALLOWED_ERRORS && !rateLimited) {
       nowAvailable = !error || !!urlHealth.available;
     }
     if (available && !nowAvailable) {
@@ -108,6 +109,7 @@ function HealthMonitor() {
       lastError,
       lastErrorAt,
       errorCount,
+      rateLimited,
       available: nowAvailable,
       blockHeight: blockHeight,
       blockTime: blockTime,
