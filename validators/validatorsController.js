@@ -43,7 +43,7 @@ function ValidatorsController(registry) {
 
     router.get('/chains/:chain', async (ctx, next) => {
       let chainName = ctx.params.chain
-      let validators = await registry.getChainValidators(chainName)
+      let validators = await registry.getChainValidators(chainName, ['path', 'name', 'profile'])
       renderJson(ctx, {
         name: chainName,
         validators: _.shuffle(validators)
@@ -54,7 +54,7 @@ function ValidatorsController(registry) {
       let chainName = ctx.params.chain
       let validatorAddress = ctx.params.validatorAddress
       let registryValidator = await registry.getRegistryValidatorFromAddress(validatorAddress)
-      let validator = await registry.getChainValidator(chainName, validatorAddress, registryValidator)
+      let validator = await registry.getChainValidator(chainName, validatorAddress, registryValidator, ['path', 'name', 'profile'])
       renderJson(ctx, validator && {
         name: chainName,
         validator: validator
