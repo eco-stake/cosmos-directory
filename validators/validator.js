@@ -2,7 +2,6 @@ import {
   fromBase64, toHex
 } from '@cosmjs/encoding'
 import { sha256 } from '@cosmjs/crypto'
-import RIPEMD160 from 'ripemd160'
 
 export class Validator {
   constructor(data, registryData, blocks){
@@ -16,9 +15,11 @@ export class Validator {
 
   hexAddress(){
     const pubKey = this.data.consensus_pubkey
-    const raw = sha256(fromBase64(pubKey.key))
-    const address = toHex(raw).slice(0, 40).toUpperCase()
-    return address
+    if(pubKey){
+      const raw = sha256(fromBase64(pubKey.key))
+      const address = toHex(raw).slice(0, 40).toUpperCase()
+      return address
+    }
   }
 
   uptimePercentage(){
