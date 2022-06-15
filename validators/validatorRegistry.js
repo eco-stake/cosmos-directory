@@ -41,7 +41,7 @@ function ValidatorRegistry(client) {
     const blocks = await getBlocks(chainName)
     return Promise.all(Object.values(validators).map(async data => {
       const registryValidator = await getRegistryValidatorFromAddress(data.operator_address, mapping)
-      const validator = buildValidator(chainName, data, registryValidator, blocks)
+      const validator = buildValidator(chainName, data, registryValidator, blocks, ['path', 'name', 'profile'])
       return validator
     }))
   }
@@ -56,9 +56,9 @@ function ValidatorRegistry(client) {
     return buildValidator(chainName, chainData[0], registryValidator, await getBlocks(chainName))
   }
 
-  function buildValidator(chainName, chainData, registryValidator, blocks){
+  function buildValidator(chainName, chainData, registryValidator, blocks, includeRegistryData){
     if(registryValidator){
-      const registryData = _.pick(registryValidator, ['path', 'name', 'profile'])
+      const registryData = includeRegistryData ? _.pick(registryValidator, includeRegistryData) : {}
       const chain = registryValidator.getChain(chainName)
       const validator = new Validator(chainData, { ...chain, ...registryData }, blocks)
       registryValidator.setValidator(chainName, validator)
