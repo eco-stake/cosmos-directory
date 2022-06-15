@@ -58,7 +58,7 @@ function ValidatorRegistry(client) {
 
   function buildValidator(chainName, chainData, registryValidator, blocks){
     if(registryValidator){
-      const registryData = _.take(registryValidator, ['path', 'name', 'profile'])
+      const registryData = _.pick(registryValidator, ['path', 'name', 'profile'])
       const chain = registryValidator.getChain(chainName)
       const validator = new Validator(chainData, { ...chain, ...registryData }, blocks)
       registryValidator.setValidator(chainName, validator)
