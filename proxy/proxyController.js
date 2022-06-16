@@ -51,6 +51,8 @@ const ProxyController = (client, registry) => {
     proxyRes.on('end', function () {
       res.rawBody = Buffer.concat(body).toString()
     });
+
+    proxyRes.headers["access-control-allow-origin"] = '*';
   })
 
   proxy.on('error', (err, req, res) => {
@@ -173,12 +175,6 @@ const ProxyController = (client, registry) => {
       ctx.res.on('finish', () => { 
         resolve()
       })
-
-      proxy.on('proxyRes', (proxyRes, req, res) => {
-        // Causes major memory leak
-        // proxyRes.headers["x-forwarded-to"] = ctx.state.proxyUrl;
-        proxyRes.headers["access-control-allow-origin"] = '*';
-      });
 
       proxy.web(ctx.req, ctx.res, opts, e => {
         const status = {
