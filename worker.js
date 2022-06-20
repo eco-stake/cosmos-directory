@@ -9,6 +9,7 @@ import BlockMonitor from "./chains/blockMonitor.js";
 
 const chainUrl = process.env.CHAIN_URL || 'https://github.com/cosmos/chain-registry'
 const chainBranch = process.env.CHAIN_BRANCH || 'master'
+const chainPath = process.env.CHAIN_PATH
 const repoRefreshSeconds = parseInt(process.env.REPO_REFRESH || 900)
 const validatorUrl = process.env.VALIDATOR_URL || 'https://github.com/eco-stake/validator-registry'
 const validatorBranch = process.env.VALIDATOR_BRANCH || 'master'
@@ -77,7 +78,7 @@ async function queueBlockCheck(client, registry, monitor) {
 (async () => {
   const client = await redisClient();
 
-  const chainRepo = Repository(client, chainUrl, chainBranch, { exclude: ['testnets'], require: 'chain.json' })
+  const chainRepo = Repository(client, chainUrl, chainBranch, { path: chainPath, require: 'chain.json' })
   const validatorRepo = Repository(client, validatorUrl, validatorBranch, { exclude: [], require: 'chains.json', storeMeta: async (name, allData) => {
     await client.json.set([name, 'addresses'].join(':'), '$', allData.reduce((sum, validator) => {
       for(const chain of validator.chains.chains){

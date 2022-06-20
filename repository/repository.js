@@ -11,6 +11,7 @@ function Repository(client, url, branch, opts) {
   opts = opts || {}
   const name = opts.name || url.split('/').slice(-1)[0]
   const repoDir = join(process.cwd(), '../' + name)
+  const repoPath = join(repoDir, opts.path || '')
   const exclude = opts.exclude || []
 
   async function updateRepo() {
@@ -40,9 +41,9 @@ function Repository(client, url, branch, opts) {
   }
 
   function buildData(dir) {
-    const jsonFiles = fs.readdirSync(join(repoDir, dir)).filter(file => path.extname(file) === '.json');
+    const jsonFiles = fs.readdirSync(join(repoPath, dir)).filter(file => path.extname(file) === '.json');
     const data = jsonFiles.reduce((sum, filename) => {
-      const path = join(repoDir, dir, filename);
+      const path = join(repoPath, dir, filename);
       const data = fs.existsSync(path) ? fs.readFileSync(path) : undefined
       const json = data && JSON.parse(data);
       sum[filename.replace(/\.[^.]*$/,'')] = json
@@ -68,7 +69,7 @@ function Repository(client, url, branch, opts) {
   }
 
   async function loadData() {
-    const directories = fs.readdirSync(repoDir, { withFileTypes: true })
+    const directories = fs.readdirSync(repoPath, { withFileTypes: true })
       .filter((item) => item.isDirectory())
       .map((item) => item.name);
 
@@ -77,7 +78,7 @@ function Repository(client, url, branch, opts) {
         return;
       }
 
-      const path = join(repoDir, dir);
+      const path = join(repoPath, dir);
       if(opts.require && !fs.existsSync(join(path, opts.require))){
         return
       }
