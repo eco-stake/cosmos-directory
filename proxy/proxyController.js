@@ -51,6 +51,8 @@ const ProxyController = (client, registry) => {
     proxyRes.on('end', function () {
       res.rawBody = Buffer.concat(body).toString()
     });
+
+    proxyRes.headers["access-control-allow-origin"] = '*';
   })
 
   proxy.on('error', (err, req, res) => {
@@ -159,8 +161,7 @@ const ProxyController = (client, registry) => {
         followRedirects: true,
         agent: url.protocol === 'https:' ? httpsAgent : httpAgent,
         headers: {
-          'accept-encoding': '*;q=1,gzip=0',
-          'access-control-allow-origin': '*'
+          'accept-encoding': '*;q=1,gzip=0'
         }
       }
       ctx.req.oldPath = ctx.req.url
@@ -174,11 +175,6 @@ const ProxyController = (client, registry) => {
       ctx.res.on('finish', () => { 
         resolve()
       })
-
-      // Causes major memory leak
-      // proxy.on('proxyRes', (proxyRes, req, res) => {
-      //   proxyRes.headers["x-forwarded-to"] = ctx.state.proxyUrl;
-      // });
 
       proxy.web(ctx.req, ctx.res, opts, e => {
         const status = {
