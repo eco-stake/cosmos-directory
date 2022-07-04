@@ -37,12 +37,16 @@ function BlockMonitor() {
         }
 
         debugLog(chain.path, 'Websocket connecting')
-        let ws = new Client(rpcUrl.replace('http', 'ws') + 'websocket', { reconnect: true, max_reconnects: 3 })
+        const url = rpcUrl.replace('http', 'ws') + 'websocket'
+        let ws = new Client(url, { reconnect: true, max_reconnects: 3 })
         monitors[chain.path] = ws
         ws.on('open', function () {
           ws.call('subscribe', { query: "tm.event='NewBlock'" })
 
           ws.socket.addEventListener("message", readMessage)
+        })
+        ws.on('error', function(error){
+          debugLog(chain.path, url, error.message)
         })
       };
       return queue.add(request, { identifier: chain.path });
