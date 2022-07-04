@@ -76,18 +76,21 @@ function HealthMonitor() {
     }
     const responseTime = timings?.phases?.total
 
-    let { lastError, lastErrorAt, available, rateLimited } = urlHealth;
+    let { lastError, lastErrorAt, lastSuccessAt, available, rateLimited } = urlHealth;
     let errorCount = urlHealth.errorCount || 0;
     if (error) {
       errorCount++;
       lastError = error.message;
       lastErrorAt = Date.now();
       rateLimited = rateLimited || (response?.statusCode === 429)
-    } else if (errorCount > 0) {
-      const currentTime = Date.now();
-      const cooldownDate = (currentTime - 1000 * ERROR_COOLDOWN);
-      if (lastErrorAt <= cooldownDate) {
-        errorCount = 0;
+    } else {
+      lastSuccessAt = Date.now();
+      if (errorCount > 0) {
+        const currentTime = Date.now();
+        const cooldownDate = (currentTime - 1000 * ERROR_COOLDOWN);
+        if (lastErrorAt <= cooldownDate) {
+          errorCount = 0;
+        }
       }
     }
 
@@ -108,6 +111,7 @@ function HealthMonitor() {
       finalAddress,
       lastError,
       lastErrorAt,
+      lastSuccessAt,
       errorCount,
       rateLimited,
       available: nowAvailable,
