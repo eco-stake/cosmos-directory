@@ -126,7 +126,7 @@ function ValidatorMonitor() {
       if(result && result.body){
         const json = JSON.parse(result.body)
         pages.push(json);
-        nextKey = json.pagination.next_key;
+        nextKey = json.pagination?.next_key;
       }else{
         nextKey = undefined
       }
