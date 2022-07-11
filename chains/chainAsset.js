@@ -10,7 +10,7 @@ function ChainAsset(data) {
     display,
     symbol,
     denom: base.denom,
-    decimals: token?.exponent || 6,
+    decimals: token?.exponent ?? 6,
     coingecko_id,
     base,
     token,
