@@ -4,7 +4,8 @@ import {
 import { sha256 } from '@cosmjs/crypto'
 
 export class Validator {
-  constructor(data, registryData, blocks){
+  constructor(chain, data, registryData, blocks){
+    this.chain = chain
     this.data = data || {}
     this.registryData = registryData || {}
     this.address = this.data.operator_address || this.registryData.address
@@ -25,14 +26,44 @@ export class Validator {
   consensusAddress(prefix){
     const pubKey = this.data.consensus_pubkey
     if(pubKey){
+      prefix = prefix || `${this.chain.chain.bech32_prefix}valcons`
       const raw = sha256(fromBase64(pubKey.key))
       const address = Bech32.encode(prefix, raw.slice(0, 20));
       return address
     }
   }
 
+  uptimePeriods(){
+    return this.missedBlockPeriods().map(period => {
+      return {
+        blocks: period.blocks,
+        uptime: (period.blocks - period.missed) / period.blocks
+      }
+    })
+  }
+
   uptimePercentage(){
     return this.signedBlocks().length / this.blocks.length
+  }
+
+  missedBlockPeriods(){
+    const periods = []
+    periods.push({
+      blocks: this.blocks.length,
+      missed: this.blocks.length - this.signedBlocks().length
+    })
+    const chainParams = this.chain.params
+    const slashingPeriod = chainParams.slashing?.signed_blocks_window
+    const slashingMissed = this.data.signing_info?.missed_blocks_counter
+    if(slashingPeriod != undefined && slashingMissed != undefined){
+      periods.push({
+        blocks: parseInt(slashingPeriod),
+        missed: parseInt(slashingMissed)
+      })
+    }
+    return periods.sort((a, b) => {
+      return a.blocks - b.blocks
+    })
   }
 
   missedBlocks(){
@@ -60,7 +91,9 @@ export class Validator {
       address,
       hexAddress: this.hexAddress(),
       uptime: this.uptimePercentage(),
+      uptimePeriods: this.uptimePeriods(),
       missedBlocks: this.missedBlocks().length,
+      missedBlockPeriods: this.missedBlockPeriods(),
       // ..._.omit(this.registryData, 'name'),
       ...this.registryData,
       ...this.data

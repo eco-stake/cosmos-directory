@@ -1,14 +1,12 @@
 import ChainApis from "./chainApis.js";
 import ChainAsset from './chainAsset.js'
 
-function Chain(client, data) {
+function Chain(client, data, paramsData) {
   const { path, chain, assetlist } = data;
+  const { params } = paramsData
+
   chain.name = chain.chain_name
   const assets = assetlist && assetlist.assets.map(el => ChainAsset(el));
-
-  async function params() {
-    return await client.json.get('chains:' + path, '$') || {}
-  }
 
   async function apis(type){
     const health = await apiHealth(type)

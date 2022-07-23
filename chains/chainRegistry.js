@@ -25,7 +25,8 @@ function ChainRegistry(client) {
     if (!data.chain)
       return
 
-    return Chain(client, data)
+    const params = await client.json.get('chains:' + path, '$') || {}
+    return Chain(client, data, params)
   }
 
   return {

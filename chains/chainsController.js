@@ -6,7 +6,7 @@ function ChainsController(registry) {
     const { chain_name, network_type, pretty_name, chain_id, status } = chain.chain;
     const baseAsset = chain.baseAsset()
     const apis = await chain.apis()
-    const params = await chain.params()
+    const params = chain.params
     const response = {
       name: chain_name,
       path: chain.path,
@@ -26,17 +26,17 @@ function ChainsController(registry) {
         rpc: apis.bestUrls('rpc')
       },
       params: {
-        authz: params.params?.authz,
-        bonded_tokens: params.params?.bonded_tokens,
-        total_supply: params.params?.total_supply,
-        actual_block_time: params.params?.actual_block_time,
-        calculated_apr: params.params?.calculated_apr,
+        authz: params?.authz,
+        bonded_tokens: params?.bonded_tokens,
+        total_supply: params?.total_supply,
+        actual_block_time: params?.actual_block_time,
+        calculated_apr: params?.calculated_apr,
       }
     };
     if (summarize) {
       return response
     } else {
-      return { ...chain.chain, ...response, params: params.params }
+      return { ...chain.chain, ...response, params: params }
     } 
   }
 

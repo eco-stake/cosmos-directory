@@ -67,8 +67,8 @@ function ValidatorMonitor() {
       setRank(validators)
       const calls = validators.map((validator) => {
         return async () => {
-          const model = new Validator(validator)
-          const consensusAddress = model.consensusAddress(`${chain.chain.bech32_prefix}valcons`)
+          const model = new Validator(chain, validator)
+          const consensusAddress = model.consensusAddress()
           try {
             validator.slashes = await getSlashes(url, height, model.address)
           } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator slashes update failed', error.message) }
