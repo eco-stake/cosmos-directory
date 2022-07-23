@@ -43,6 +43,7 @@ function ChainMonitor() {
       const authzParams = await getAuthzParams(restUrl)
       const blockParams = await getBlockParams(restUrl, chain) || {}, { actualBlocksPerYear } = blockParams
       const stakingParams = await getStakingParams(restUrl, chain) || {}, { bondedTokens } = stakingParams
+      const slashingParams = await getSlashingParams(restUrl, chain) || {}
       let supplyParams = {}, aprParams = {}
       if (denom) {
         supplyParams = await getSupplyParams(restUrl, chain, bondedTokens) || {}
@@ -58,6 +59,7 @@ function ChainMonitor() {
         ...authzParams, 
         ...blockParams, 
         ...stakingParams, 
+        ...slashingParams,
         ...supplyParams, 
         ...mintParams, 
         ...distributionParams, 
@@ -114,9 +116,19 @@ function ChainMonitor() {
       return {
         unbondingTime,
         maxValidators,
-        bondedTokens
+        bondedTokens,
+        staking: staking.params
       }
     } catch (e) { timeStamp(chain.path, 'Staking check failed', e.message) }
+  }
+
+  async function getSlashingParams(restUrl, chain) {
+    try {
+      const slashing = await got.get(restUrl + 'cosmos/slashing/v1beta1/params', gotOpts).json();
+      return {
+        slashing: slashing.params
+      }
+    } catch (e) { timeStamp(chain.path, 'Slashing check failed', e.message) }
   }
 
   async function getMintParams(restUrl, chain) {
@@ -130,6 +142,7 @@ function ChainMonitor() {
           blocksPerYear,
           blockTime,
           baseInflation,
+          mint: mint.params
         }
     } catch (e) { timeStamp(chain.path, 'Mint check failed', e.message) }
   }
@@ -138,7 +151,7 @@ function ChainMonitor() {
     try {
       const distribution = await got.get(restUrl + 'cosmos/distribution/v1beta1/params', gotOpts).json();
       const communityTax = parseFloat(distribution.params.community_tax)
-      return { communityTax }
+      return { communityTax, distribution: distribution.params }
     } catch (e) { timeStamp(chain.path, 'Distribution check failed', e.message) }
   }
 
@@ -154,11 +167,17 @@ function ChainMonitor() {
       } else if(path === 'evmos'){
           const params = await got.get(restUrl + 'evmos/inflation/v1/params', gotOpts).json();
           const provision = await got.get(restUrl + 'evmos/inflation/v1/epoch_mint_provision', gotOpts).json();
-          return { annualProvision: multiply(bignumber(provision.epoch_mint_provision.amount), 365.3, params.params.inflation_distribution.staking_rewards) }
+          return { 
+            annualProvision: multiply(bignumber(provision.epoch_mint_provision.amount), 365.3, params.params.inflation_distribution.staking_rewards), 
+            inflation: params.params 
+          }
       } else if(path === 'osmosis'){
           const params = await got.get(restUrl + 'osmosis/mint/v1beta1/params', gotOpts).json();
           const provision = await got.get(restUrl + 'osmosis/mint/v1beta1/epoch_provisions', gotOpts).json();
-          return { annualProvision: multiply(bignumber(provision.epoch_provisions), 365.3, params.params.distribution_proportions.staking) }
+          return { 
+            annualProvision: multiply(bignumber(provision.epoch_provisions), 365.3, params.params.distribution_proportions.staking),
+            mint: params.params
+          }
       } else if(path === 'stargaze'){
           const params = await got.get(restUrl + 'minting/annual-provisions', gotOpts).json();
           return { annualProvision: multiply(params.result, 0.5) }
