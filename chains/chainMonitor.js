@@ -147,6 +147,10 @@ function ChainMonitor() {
           const params = await got.get(restUrl + 'evmos/inflation/v1/params', axiosOpts).json();
           const provision = await got.get(restUrl + 'evmos/inflation/v1/epoch_mint_provision', axiosOpts).json();
           return { annualProvision: multiply(bignumber(provision.epoch_mint_provision.amount), 365.3, params.params.inflation_distribution.staking_rewards) }
+      } else if(path === 'echelon'){
+          const params = await got.get(restUrl + 'echelon/inflation/v1/params', axiosOpts).json();
+          const provision = await got.get(restUrl + 'echelon/inflation/v1/epoch_mint_provision', axiosOpts).json();
+          return { annualProvision: multiply(bignumber(provision.epoch_mint_provision.amount), 365.3, params.params.inflation_distribution.staking_rewards) }
       } else if(path === 'osmosis'){
           const params = await got.get(restUrl + 'osmosis/mint/v1beta1/params', axiosOpts).json();
           const provision = await got.get(restUrl + 'osmosis/mint/v1beta1/epoch_provisions', axiosOpts).json();
