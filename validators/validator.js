@@ -1,5 +1,5 @@
 import {
-  fromBase64, toHex
+  fromBase64, toHex, Bech32
 } from '@cosmjs/encoding'
 import { sha256 } from '@cosmjs/crypto'
 
@@ -18,6 +18,15 @@ export class Validator {
     if(pubKey){
       const raw = sha256(fromBase64(pubKey.key))
       const address = toHex(raw).slice(0, 40).toUpperCase()
+      return address
+    }
+  }
+
+  consensusAddress(prefix){
+    const pubKey = this.data.consensus_pubkey
+    if(pubKey){
+      const raw = sha256(fromBase64(pubKey.key))
+      const address = Bech32.encode(prefix, raw.slice(0, 20));
       return address
     }
   }

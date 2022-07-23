@@ -1,8 +1,7 @@
 import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
-import Agent from 'agentkeepalive'
-import { timeStamp, debugLog } from '../utils.js';
+import { timeStamp, debugLog, createAgent } from '../utils.js';
 
 const ALLOWED_DELAY = 30 * 60
 const ALLOWED_ERRORS = 10
@@ -10,10 +9,7 @@ const ERROR_COOLDOWN = 10 * 60
 const HEALTH_TIMEOUT = 5000
 
 function HealthMonitor() {
-  const agent = {
-    http: new Agent({ maxSockets: 10 }),
-    https: new Agent.HttpsAgent({ maxSockets: 10 })
-  }
+  const agent = createAgent();
   const queue = new PQueue({ concurrency: 10 });
 
   async function refreshApis(client, chains) {

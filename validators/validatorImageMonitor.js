@@ -1,15 +1,16 @@
 import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
-import Agent from 'agentkeepalive'
-import { debugLog, executeSync, timeStamp } from '../utils.js';
+import { createAgent, debugLog, executeSync, timeStamp } from '../utils.js';
 
 function ValidatorImageMonitor() {
-  const agent = {
-    http: new Agent({ maxSockets: 200 }),
-    https: new Agent.HttpsAgent({ maxSockets: 200 })
-  }
+  const agent = createAgent();
   const queue = new PQueue({ concurrency: 2 });
+  const gotOpts = {
+    timeout: { request: 5000 },
+    retry: { limit: 1 },
+    agent: agent
+  }
 
   async function refreshValidatorImages(client, chains) {
     timeStamp('Running validator image update');
@@ -28,20 +29,12 @@ function ValidatorImageMonitor() {
           return async () => {
             try {
               const mintscan_image = `https://raw.githubusercontent.com/cosmostation/cosmostation_token_resource/master/moniker/${path}/${address}.png`
-              await got.get(mintscan_image, {
-                timeout: { request: 5000 },
-                retry: { limit: 1 },
-                agent: agent
-              })
+              await got.get(mintscan_image, gotOpts)
               await client.json.set('validators:' + path, '$.validators.' + address + '.mintscan_image', mintscan_image);
             } catch { }
             if (validator.description.identity) {
               try {
-                const response = await got.get("https://keybase.io/_/api/1.0/user/lookup.json?fields=pictures&key_suffix=" + validator.description.identity, {
-                  timeout: { request: 5000 },
-                  retry: { limit: 1 },
-                  agent: agent
-                })
+                const response = await got.get("https://keybase.io/_/api/1.0/user/lookup.json?fields=pictures&key_suffix=" + validator.description.identity, gotOpts)
                 if (response && response.body) {
                   const data = JSON.parse(response.body)
                   if (data.them && data.them[0] && data.them[0].pictures) {
