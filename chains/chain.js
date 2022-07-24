@@ -7,7 +7,7 @@ const CONSENSUS_PREFIXES = {
 
 function Chain(client, data, paramsData) {
   const { path, chain, assetlist } = data;
-  const { params } = paramsData
+  const { params, services } = paramsData
 
   chain.name = chain.chain_name
   const assets = assetlist && assetlist.assets.map(el => ChainAsset(el));
@@ -52,6 +52,7 @@ function Chain(client, data, paramsData) {
     consensusPrefix,
     ...data,
     params,
+    services,
     apis,
     baseAsset,
     getDataset

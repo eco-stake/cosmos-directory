@@ -36,7 +36,7 @@ function ChainsController(registry) {
     if (summarize) {
       return response
     } else {
-      return { ...chain.chain, ...response, params: params }
+      return { ...chain.chain, ...response, params: params, services: chain.services }
     } 
   }
 

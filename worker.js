@@ -7,6 +7,7 @@ import { redisClient } from "./redisClient.js";
 import ChainMonitor from "./chains/chainMonitor.js";
 import BlockMonitor from "./chains/blockMonitor.js";
 import ValidatorImageMonitor from "./validators/validatorImageMonitor.js";
+import StakingRewardsMonitor from "./services/stakingRewardsMonitor.js";
 
 const chainUrl = process.env.CHAIN_URL || 'https://github.com/cosmos/chain-registry'
 const chainBranch = process.env.CHAIN_BRANCH || 'master'
@@ -19,6 +20,8 @@ const validatorImageRefreshSeconds = parseInt(process.env.VALIDATOR_IMAGE_REFRES
 const chainRefreshSeconds = parseInt(process.env.CHAIN_REFRESH || 60 * 5)
 const healthRefreshSeconds = parseInt(process.env.HEALTH_REFRESH || 10)
 const blockRefreshSeconds = parseInt(process.env.BLOCK_REFRESH || 15)
+const stakingRewardsKey = process.env.STAKING_REWARDS_KEY
+const stakingRewardsRefreshSeconds = parseInt(process.env.STAKING_REWARDS_REFRESH || 60 * 60)
 
 console.log("Using config:", {
   chainUrl,
@@ -81,6 +84,14 @@ async function queueBlockCheck(client, registry, monitor) {
   }, 1000 * blockRefreshSeconds)
 }
 
+async function queueStakingRewardsCheck(client, registry, monitor) {
+  setTimeout(async () => {
+    const chains = await registry.getChains()
+    await monitor.refreshStakingRewards(client, chains, stakingRewardsKey)
+    queueStakingRewardsCheck(client, registry, monitor)
+  }, 1000 * stakingRewardsRefreshSeconds)
+}
+
 (async () => {
   const client = await redisClient();
 
@@ -130,5 +141,13 @@ async function queueBlockCheck(client, registry, monitor) {
   validatorImageMonitor.refreshValidatorImages(client, chains)
   if (validatorImageRefreshSeconds > 0) {
     queueValidatorImageCheck(client, chainRegistry, validatorImageMonitor)
+  }
+
+  if(stakingRewardsKey){
+    const stakingRewardsMonitor = StakingRewardsMonitor()
+    stakingRewardsMonitor.refreshStakingRewards(client, chains, stakingRewardsKey)
+    if (stakingRewardsRefreshSeconds > 0) {
+      queueStakingRewardsCheck(client, chainRegistry, stakingRewardsMonitor)
+    }
   }
 })();

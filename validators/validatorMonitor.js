@@ -73,7 +73,7 @@ function ValidatorMonitor() {
             validator.slashes = await getSlashes(url, height, model.address)
           } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator slashes update failed', error.message) }
           try {
-            validator.signing_info = await getSlashInfo(url, consensusAddress)
+            validator.signing_info = await getSlashInfo(url, consensusAddress) || validator.signing_info
           } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator signing info update failed', error.message) }
         }
       })
@@ -103,9 +103,6 @@ function ValidatorMonitor() {
       searchParams.append("ending_height", height);
       if (nextKey) searchParams.append("pagination.key", nextKey);
       return got.get(`${url}cosmos/distribution/v1beta1/validators/${operatorAddress}/slashes?` + searchParams.toString(), gotOpts).catch(error => {
-        if(error.response?.statusCode === 404){
-          return []
-        }
         throw error
       });
     })
@@ -119,7 +116,7 @@ function ValidatorMonitor() {
       return data.val_signing_info
     } catch (error) {
       if (error.response?.statusCode === 404) {
-        return {}
+        return null
       }
       throw error
     }
