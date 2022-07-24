@@ -2,6 +2,8 @@ import _ from 'lodash'
 import RegistryValidator from './registryValidator.js'
 import { Validator } from './validator.js'
 
+export const MAX_BLOCKS = 100
+
 function ValidatorRegistry(client) {
   async function repository() {
     return await client.json.get('validator-registry:repository', '$') || {}
@@ -24,7 +26,7 @@ function ValidatorRegistry(client) {
     if(!latest) return []
 
     const keys = []
-    for (let i = 0; i < 99; i++) {
+    for (let i = 0; i < MAX_BLOCKS - 1; i++) {
       keys.push(`blocks:${chainName}#${parseInt(latest.height) - (i + 1)}`)
     }
     let blocks = await client.json.mGet(keys, '$')
