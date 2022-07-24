@@ -164,9 +164,9 @@ function ChainMonitor() {
         return { annualProvision: bignumber(provison) }
       } else if(path === 'emoney'){
         return { annualProvision: supplyParams.totalSupply * 0.1 }
-      } else if(path === 'evmos'){
-          const params = await got.get(restUrl + 'evmos/inflation/v1/params', gotOpts).json();
-          const provision = await got.get(restUrl + 'evmos/inflation/v1/epoch_mint_provision', gotOpts).json();
+      } else if(path === 'evmos' || path === 'echelon'){
+          const params = await got.get(restUrl + path + '/inflation/v1/params', gotOpts).json();
+          const provision = await got.get(restUrl + path + '/inflation/v1/epoch_mint_provision', gotOpts).json();
           return { 
             annualProvision: multiply(bignumber(provision.epoch_mint_provision.amount), 365.3, params.params.inflation_distribution.staking_rewards), 
             inflation: params.params 
