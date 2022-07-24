@@ -26,7 +26,7 @@ export class Validator {
   consensusAddress(prefix){
     const pubKey = this.data.consensus_pubkey
     if(pubKey){
-      prefix = prefix || `${this.chain.chain.bech32_prefix}valcons`
+      prefix = prefix || this.chain.consensusPrefix
       const raw = sha256(fromBase64(pubKey.key))
       const address = Bech32.encode(prefix, raw.slice(0, 20));
       return address

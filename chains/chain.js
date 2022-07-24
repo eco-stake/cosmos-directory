@@ -1,12 +1,19 @@
 import ChainApis from "./chainApis.js";
 import ChainAsset from './chainAsset.js'
 
+const CONSENSUS_PREFIXES = {
+  cryptoorgchain: 'crocnclcons'
+}
+
 function Chain(client, data, paramsData) {
   const { path, chain, assetlist } = data;
   const { params } = paramsData
 
   chain.name = chain.chain_name
   const assets = assetlist && assetlist.assets.map(el => ChainAsset(el));
+
+  const prefix = chain.bech32_prefix
+  const consensusPrefix = CONSENSUS_PREFIXES[path] || `${prefix}valcons`
 
   async function apis(type){
     const health = await apiHealth(type)
@@ -41,6 +48,8 @@ function Chain(client, data, paramsData) {
     denom: baseAsset()?.denom,
     symbol: baseAsset()?.symbol,
     assets,
+    prefix,
+    consensusPrefix,
     ...data,
     params,
     apis,
