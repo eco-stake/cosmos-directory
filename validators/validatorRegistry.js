@@ -2,6 +2,8 @@ import _ from 'lodash'
 import RegistryValidator from './registryValidator.js'
 import { Validator } from './validator.js'
 
+export const MAX_BLOCKS = 100
+
 function ValidatorRegistry(client) {
   async function repository() {
     return await client.json.get('validator-registry:repository', '$') || {}
@@ -24,7 +26,7 @@ function ValidatorRegistry(client) {
     if(!latest) return []
 
     const keys = []
-    for (let i = 0; i < 99; i++) {
+    for (let i = 0; i < MAX_BLOCKS - 1; i++) {
       keys.push(`blocks:${chainName}#${parseInt(latest.height) - (i + 1)}`)
     }
     let blocks = await client.json.mGet(keys, '$')
@@ -34,37 +36,37 @@ function ValidatorRegistry(client) {
     })
   }
 
-  async function getChainValidators(chainName, includeRegistryData) {
-    const data = await client.json.get('validators:' + chainName, '$') || {}
+  async function getChainValidators(chain, includeRegistryData) {
+    const data = await client.json.get('validators:' + chain.path, '$') || {}
     const validators = data.validators || {}
     const mapping = await addressMapping()
-    const blocks = await getBlocks(chainName)
+    const blocks = await getBlocks(chain.path)
     return Promise.all(Object.values(validators).map(async data => {
       const registryValidator = await getRegistryValidatorFromAddress(data.operator_address, mapping)
-      const validator = buildValidator(chainName, data, registryValidator, blocks, includeRegistryData)
+      const validator = buildValidator(chain, data, registryValidator, blocks, includeRegistryData)
       return validator
     }))
   }
 
-  async function getChainValidator(chainName, address, registryValidator, includeRegistryData) {
-    const chainData = await client.json.get('validators:' + chainName, {
+  async function getChainValidator(chain, address, registryValidator, includeRegistryData) {
+    const chainData = await client.json.get('validators:' + chain.path, {
       path: [
         '$.validators.' + address,
       ]
     })
     if(!chainData) return
-    return buildValidator(chainName, chainData[0], registryValidator, await getBlocks(chainName), includeRegistryData)
+    return buildValidator(chain, chainData[0], registryValidator, await getBlocks(chain.path), includeRegistryData)
   }
 
-  function buildValidator(chainName, chainData, registryValidator, blocks, includeRegistryData){
+  function buildValidator(chain, chainData, registryValidator, blocks, includeRegistryData){
     if(registryValidator){
       const registryData = includeRegistryData ? _.pick(registryValidator, includeRegistryData) : {}
-      const chain = registryValidator.getChain(chainName)
-      const validator = new Validator(chainData, { ...chain, ...registryData }, blocks)
-      registryValidator.setValidator(chainName, validator)
+      const validatorChain = registryValidator.getChain(chain.path)
+      const validator = new Validator(chain, chainData, { ...validatorChain, ...registryData }, blocks)
+      registryValidator.setValidator(chain.path, validator)
       return validator
     }else{
-      return new Validator(chainData, {}, blocks)
+      return new Validator(chain, chainData, {}, blocks)
     }
   }
 

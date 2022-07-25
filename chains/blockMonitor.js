@@ -1,11 +1,19 @@
 import PQueue from 'p-queue';
 import _ from 'lodash'
-import { debugLog, timeStamp } from '../utils.js';
+import got from 'got'
+import { createAgent, debugLog, timeStamp } from '../utils.js';
 import { Client } from 'rpc-websockets'
 import { UniqueQueue } from '../uniqueQueue.js'
+import { MAX_BLOCKS } from '../validators/validatorRegistry.js';
 
 function BlockMonitor() {
   const monitors = {}
+  const agent = createAgent();
+  const gotOpts = {
+    timeout: { request: 5000 },
+    retry: { limit: 3 },
+    agent: agent
+  }
   const queue = new PQueue({ concurrency: 20, queueClass: UniqueQueue });
 
   async function refreshChains(client, chains) {
@@ -14,7 +22,7 @@ function BlockMonitor() {
       const readMessage = function ({ data: message }) {
         message = JSON.parse(message);
         if (message.result?.data?.type === 'tendermint/event/NewBlock') {
-          return setBlock(client, chain, message.result.data.value.block);
+          return setCurrentBlock(client, chain, message.result.data.value.block);
         }
       }
 
@@ -54,17 +62,40 @@ function BlockMonitor() {
     debugLog('Block update queued')
   }
 
-  async function setBlock(client, chain, block) {
+  async function setCurrentBlock(client, chain, block){
     try {
       const height = block.header.height
-      debugLog(chain.path, 'Caching height', height)
-      const processed = processBlock(block)
+      const processed = await setBlock(client, chain, block)
       await client.json.set(`blocks:${chain.path}`, '$', processed)
-      await client.json.set(`blocks:${chain.path}#${height}`, '$', processed)
-      await client.expire(`blocks:${chain.path}#${height}`, 60 * 60)
+      await fetchBlock(client, chain, height, height - 1)
     } catch (error) {
       timeStamp(chain.path, 'Block update failed', error.message)
     }
+  }
+
+  async function fetchBlock(client, chain, currentHeight, height, restUrl){
+    let block = await client.json.get(`blocks:${chain.path}#${height}`, '$')
+    if(!block){
+      debugLog(chain.path, 'Fetching height', height)
+      if(!restUrl){
+        const apis = await chain.apis('rest')
+        restUrl = apis.bestAddress('rest')
+        if(!restUrl) throw new Error(chain.path + ' no available REST API')
+      }
+      block = await got.get(`${restUrl}blocks/${height}`, gotOpts).json()
+      await setBlock(client, chain, block.block)
+      if(currentHeight - height < MAX_BLOCKS){
+        return fetchBlock(client, chain, currentHeight, height - 1, restUrl)
+      }
+    }
+  }
+
+  async function setBlock(client, chain, block) {
+    const processed = processBlock(block)
+    debugLog(chain.path, 'Caching height', processed.height)
+    await client.json.set(`blocks:${chain.path}#${processed.height}`, '$', processed)
+    await client.expire(`blocks:${chain.path}#${processed.height}`, 60 * 60)
+    return processed
   }
 
   function processBlock(block) {

@@ -44,7 +44,7 @@ import BugsnagPluginKoa from "@bugsnag/plugin-koa"
   subdomain.use('rpc', proxyController.routes('rpc'));
 
   subdomain.use('chains', ChainsController(chainRegistry).routes());
-  subdomain.use('validators', ValidatorsController(validatorRegistry).routes());
+  subdomain.use('validators', ValidatorsController(chainRegistry, validatorRegistry).routes());
   subdomain.use('status', StatusController(client, chainRegistry).routes());
 
   app.use(subdomain.routes());

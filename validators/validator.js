@@ -1,10 +1,11 @@
 import {
-  fromBase64, toHex
+  fromBase64, toHex, Bech32
 } from '@cosmjs/encoding'
 import { sha256 } from '@cosmjs/crypto'
 
 export class Validator {
-  constructor(data, registryData, blocks){
+  constructor(chain, data, registryData, blocks){
+    this.chain = chain
     this.data = data || {}
     this.registryData = registryData || {}
     this.address = this.data.operator_address || this.registryData.address
@@ -22,8 +23,47 @@ export class Validator {
     }
   }
 
+  consensusAddress(prefix){
+    const pubKey = this.data.consensus_pubkey
+    if(pubKey){
+      prefix = prefix || this.chain.consensusPrefix
+      const raw = sha256(fromBase64(pubKey.key))
+      const address = Bech32.encode(prefix, raw.slice(0, 20));
+      return address
+    }
+  }
+
+  uptimePeriods(){
+    return this.missedBlockPeriods().map(period => {
+      return {
+        blocks: period.blocks,
+        uptime: (period.blocks - period.missed) / period.blocks
+      }
+    })
+  }
+
   uptimePercentage(){
     return this.signedBlocks().length / this.blocks.length
+  }
+
+  missedBlockPeriods(){
+    const periods = []
+    periods.push({
+      blocks: this.blocks.length,
+      missed: this.blocks.length - this.signedBlocks().length
+    })
+    const chainParams = this.chain.params
+    const slashingPeriod = chainParams.slashing?.signed_blocks_window
+    const slashingMissed = this.data.signing_info?.missed_blocks_counter
+    if(slashingPeriod != undefined && slashingMissed != undefined){
+      periods.push({
+        blocks: parseInt(slashingPeriod),
+        missed: parseInt(slashingMissed)
+      })
+    }
+    return periods.sort((a, b) => {
+      return a.blocks - b.blocks
+    })
   }
 
   missedBlocks(){
@@ -49,9 +89,11 @@ export class Validator {
       moniker,
       identity,
       address,
-      hexAddress: this.hexAddress(),
+      hex_address: this.hexAddress(),
       uptime: this.uptimePercentage(),
-      missedBlocks: this.missedBlocks().length,
+      uptime_periods: this.uptimePeriods(),
+      missed_blocks: this.missedBlocks().length,
+      missed_blocks_periods: this.missedBlockPeriods(),
       // ..._.omit(this.registryData, 'name'),
       ...this.registryData,
       ...this.data
