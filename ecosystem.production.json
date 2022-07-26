@@ -5,7 +5,15 @@
   "cron_restart": "0 */3 * * *",
   "max_memory_restart": "200M"
 }, {
-  "name": "worker",
-  "script": "worker.js",
+  "name": "chain-worker",
+  "script": "chainWorker.js",
+  "cron_restart": "0 */3 * * *"
+}, {
+  "name": "validator-worker",
+  "script": "validatorWorker.js",
+  "cron_restart": "0 */3 * * *"
+}, {
+  "name": "block-worker",
+  "script": "blockWorker.js",
   "cron_restart": "0 */3 * * *"
 }]

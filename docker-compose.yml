@@ -4,8 +4,6 @@ services:
   app:
     build: .
     environment:
-      - DEBUG=1
-      - NODE_ENV=development
       - APP_NAME=app
     env_file:
       - .env
@@ -16,12 +14,34 @@ services:
       - node_modules:/usr/src/app/node_modules
     depends_on:
       - redis
-  worker:
+  chain-worker:
     build: .
     environment:
-      - DEBUG=1
-      - NODE_ENV=development
-      - APP_NAME=worker
+      - APP_NAME=chain-worker
+    env_file:
+      - .env
+    volumes:
+      - .:/usr/src/app
+      - node_modules:/usr/src/app/node_modules
+    depends_on:
+      - redis
+      - app
+  validator-worker:
+    build: .
+    environment:
+      - APP_NAME=validator-worker
+    env_file:
+      - .env
+    volumes:
+      - .:/usr/src/app
+      - node_modules:/usr/src/app/node_modules
+    depends_on:
+      - redis
+      - app
+  block-worker:
+    build: .
+    environment:
+      - APP_NAME=block-worker
     env_file:
       - .env
     volumes:

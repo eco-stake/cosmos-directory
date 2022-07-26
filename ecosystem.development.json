@@ -4,7 +4,15 @@
   "instances": 1,
   "watch": true
 }, {
-  "name": "worker",
-  "script": "worker.js",
+  "name": "chain-worker",
+  "script": "chainWorker.js",
+  "watch": true
+}, {
+  "name": "validator-worker",
+  "script": "validatorWorker.js",
+  "watch": true
+}, {
+  "name": "block-worker",
+  "script": "blockWorker.js",
   "watch": true
 }]
