@@ -29,7 +29,12 @@ function BlockMonitor() {
       const request = async () => {
         const apis = await chain.apis('rpc')
         const rpcUrl = apis.bestAddress('rpc')
-        if (!rpcUrl) return timeStamp(chain.path, 'No API URL')
+        if (!rpcUrl){
+          timeStamp(chain.path, 'No available RPC API for websocket, attempting manual fetch')
+          const restUrl = apis.bestAddress('rest')
+          if(!restUrl) return timeStamp(chain.path, 'No available REST API')
+          return fetchCurrentBlock(client, chain)
+        }
 
         let monitor = monitors[chain.path]
         if (monitor) {
@@ -55,6 +60,11 @@ function BlockMonitor() {
         })
         ws.on('error', function(error){
           debugLog(chain.path, url, error.message)
+          const failed = !ws.reconnect || (ws.max_reconnects <= ws.current_reconnects + 1)
+          if(failed){
+            timeStamp(chain.path, 'Websocket failed, fetching latest block manually')
+            fetchCurrentBlock(client, chain)
+          }
         })
       };
       return queue.add(request, { identifier: chain.path });
@@ -62,12 +72,22 @@ function BlockMonitor() {
     debugLog('Block update queued')
   }
 
-  async function setCurrentBlock(client, chain, block){
+  async function fetchCurrentBlock(client, chain){
+    try {
+      const restUrl = await getRestUrl(chain)
+      const block = await got.get(`${restUrl}blocks/latest`, gotOpts).json()
+      await setCurrentBlock(client, chain, block.block, restUrl)
+    } catch (error) {
+      timeStamp(chain.path, 'Block update failed', error.message)
+    }
+  }
+
+  async function setCurrentBlock(client, chain, block, restUrl){
     try {
       const height = block.header.height
       const processed = await setBlock(client, chain, block)
       await client.json.set(`blocks:${chain.path}`, '$', processed)
-      await fetchBlock(client, chain, height, height - 1)
+      await fetchBlock(client, chain, height, height - 1, restUrl)
     } catch (error) {
       timeStamp(chain.path, 'Block update failed', error.message)
     }
@@ -78,9 +98,7 @@ function BlockMonitor() {
     if(!block){
       debugLog(chain.path, 'Fetching height', height)
       if(!restUrl){
-        const apis = await chain.apis('rest')
-        restUrl = apis.bestAddress('rest')
-        if(!restUrl) throw new Error(chain.path + ' no available REST API')
+        restUrl = await getRestUrl(chain)
       }
       block = await got.get(`${restUrl}blocks/${height}`, gotOpts).json()
       await setBlock(client, chain, block.block)
@@ -108,6 +126,14 @@ function BlockMonitor() {
         return signature.validator_address
       })
     };
+  }
+
+  async function getRestUrl(chain){
+    const apis = await chain.apis('rest')
+    const restUrl = apis.bestAddress('rest')
+    if (!restUrl) throw new Error('No available REST API')
+
+    return restUrl
   }
 
   return {
