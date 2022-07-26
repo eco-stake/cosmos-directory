@@ -1,7 +1,6 @@
 [{
   "name": "app",
   "script": "app.js",
-  "instances": 1,
   "watch": true
 }, {
   "name": "chain-worker",
