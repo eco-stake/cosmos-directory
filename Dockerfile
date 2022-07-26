@@ -12,6 +12,5 @@ EXPOSE 3000
 
 ENV NODE_ENV=production
 ENV APP_NAME=app
-ENV INSTANCES=1
 
-CMD pm2-runtime ecosystem.${NODE_ENV}.json --only ${APP_NAME} --instances ${INSTANCES}
+CMD pm2-runtime ecosystem.${NODE_ENV}.json --only ${APP_NAME}

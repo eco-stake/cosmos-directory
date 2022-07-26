@@ -1,6 +1,7 @@
 [{
   "name": "app",
   "script": "app.js",
+  "instances": 5,
   "cron_restart": "0 */3 * * *",
   "max_memory_restart": "200M"
 }, {
