@@ -112,7 +112,7 @@ function BlockMonitor() {
     const processed = processBlock(block)
     debugLog(chain.path, 'Caching height', processed.height)
     await client.json.set(`blocks:${chain.path}#${processed.height}`, '$', processed)
-    await client.expire(`blocks:${chain.path}#${processed.height}`, 60 * 60)
+    await client.expire(`blocks:${chain.path}#${processed.height}`, 60 * 60 * 6)
     return processed
   }
 

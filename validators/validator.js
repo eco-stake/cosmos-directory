@@ -70,6 +70,12 @@ export class Validator {
 
   missedBlockPeriods(){
     const periods = []
+    if(this.blocks.length > 200){
+      periods.push({
+        blocks: 100,
+        missed: 100 - this.signedBlocks(100).length
+      })
+    }
     periods.push({
       blocks: this.blocks.length,
       missed: this.blocks.length - this.signedBlocks().length
@@ -88,18 +94,20 @@ export class Validator {
     })
   }
 
-  missedBlocks(){
+  missedBlocks(max){
     const hexAddress = this.hexAddress()
-    return this.blocks.filter(block => {
+    const blocks = this.blocks.filter(block => {
       return !block.signatures.find(el => el === hexAddress)
     })
+    return blocks.slice(0, max || blocks.length)
   }
 
-  signedBlocks(){
+  signedBlocks(max){
     const hexAddress = this.hexAddress()
-    return this.blocks.filter(block => {
+    const blocks = this.blocks.filter(block => {
       return block.signatures.find(el => el === hexAddress)
     })
+    return blocks.slice(0, max || blocks.length)
   }
 
   toJSON(){
