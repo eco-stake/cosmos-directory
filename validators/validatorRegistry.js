@@ -2,7 +2,7 @@ import _ from 'lodash'
 import RegistryValidator from './registryValidator.js'
 import { Validator } from './validator.js'
 
-export const MAX_BLOCKS = 100
+export const MAX_BLOCKS = parseInt(process.env.MAX_BLOCKS || 100)
 
 function ValidatorRegistry(client) {
   async function repository() {
