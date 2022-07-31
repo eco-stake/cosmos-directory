@@ -3,17 +3,17 @@ import ChainRegistry from './chains/chainRegistry.js';
 import ValidatorMonitor from './validators/validatorMonitor.js';
 import { redisClient } from "./redisClient.js";
 import ValidatorImageMonitor from "./validators/validatorImageMonitor.js";
-import StakingRewardsMonitor from "./services/stakingRewardsMonitor.js";
+import ServicesMonitor from "./services/servicesMonitor.js";
 
 const validatorRefreshSeconds = parseInt(process.env.VALIDATOR_REFRESH || 60 * 5)
 const validatorImageRefreshSeconds = parseInt(process.env.VALIDATOR_IMAGE_REFRESH || 60 * 60 * 12)
 const stakingRewardsKey = process.env.STAKING_REWARDS_KEY
-const stakingRewardsRefreshSeconds = parseInt(process.env.STAKING_REWARDS_REFRESH || 60 * 60)
+const servicesRefreshSeconds = parseInt(process.env.STAKING_REWARDS_REFRESH || 60 * 60)
 
 console.log("Using config:", {
   validatorRefreshSeconds,
   validatorImageRefreshSeconds,
-  stakingRewardsRefreshSeconds
+  servicesRefreshSeconds
 })
 
 if(process.env.BUGSNAG_KEY){
@@ -40,12 +40,12 @@ async function queueValidatorImageCheck(client, registry, monitor) {
   }, 1000 * validatorImageRefreshSeconds)
 }
 
-async function queueStakingRewardsCheck(client, registry, monitor) {
+async function queueServicesCheck(client, registry, monitor) {
   setTimeout(async () => {
     const chains = await registry.getChains()
-    await monitor.refreshStakingRewards(client, chains, stakingRewardsKey)
-    queueStakingRewardsCheck(client, registry, monitor)
-  }, 1000 * stakingRewardsRefreshSeconds)
+    await monitor.refreshServices(client, chains, stakingRewardsKey)
+    queueServicesCheck(client, registry, monitor)
+  }, 1000 * servicesRefreshSeconds)
 }
 
 (async () => {
@@ -66,11 +66,9 @@ async function queueStakingRewardsCheck(client, registry, monitor) {
     queueValidatorImageCheck(client, chainRegistry, validatorImageMonitor)
   }
 
-  if(stakingRewardsKey){
-    const stakingRewardsMonitor = StakingRewardsMonitor()
-    stakingRewardsMonitor.refreshStakingRewards(client, chains, stakingRewardsKey)
-    if (stakingRewardsRefreshSeconds > 0) {
-      queueStakingRewardsCheck(client, chainRegistry, stakingRewardsMonitor)
-    }
+  const servicesMonitor = ServicesMonitor()
+  servicesMonitor.refreshServices(client, chains, stakingRewardsKey)
+  if (servicesRefreshSeconds > 0) {
+    queueServicesCheck(client, chainRegistry, servicesMonitor)
   }
 })();

@@ -6,7 +6,7 @@ function ChainsController(registry) {
     const { chain_name, network_type, pretty_name, chain_id, status } = chain.chain;
     const baseAsset = chain.baseAsset()
     const apis = await chain.apis()
-    const params = chain.params
+    const { params, services } = chain
     const response = {
       name: chain_name,
       path: chain.path,
@@ -31,12 +31,13 @@ function ChainsController(registry) {
         total_supply: params?.total_supply,
         actual_block_time: params?.actual_block_time,
         calculated_apr: params?.calculated_apr,
-      }
+      },
+      services
     };
     if (summarize) {
       return response
     } else {
-      return { ...chain.chain, ...response, params: params, services: chain.services }
+      return { ...chain.chain, ...response, params, services }
     } 
   }
 

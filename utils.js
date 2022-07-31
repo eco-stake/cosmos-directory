@@ -1,5 +1,10 @@
 import _ from "lodash";
 import Agent from 'agentkeepalive'
+import { format } from 'mathjs'
+
+export function formatNumber(number) {
+  return number && format(number, { notation: 'fixed' })
+}
 
 export function debugLog(...args) {
   if(process.env.DEBUG === '1'){

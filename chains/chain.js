@@ -47,6 +47,8 @@ function Chain(client, data, paramsData) {
     prettyName: chain.pretty_name,
     denom: baseAsset()?.denom,
     symbol: baseAsset()?.symbol,
+    decimals: baseAsset()?.decimals,
+    coingeckoId: baseAsset()?.coingecko_id,
     assets,
     prefix,
     consensusPrefix,

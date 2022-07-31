@@ -2,6 +2,7 @@ import {
   fromBase64, toHex, Bech32
 } from '@cosmjs/encoding'
 import { sha256 } from '@cosmjs/crypto'
+import { multiply, divide, pow } from 'mathjs'
 
 export class Validator {
   constructor(chain, data, registryData, blocks){
@@ -12,6 +13,27 @@ export class Validator {
     this.moniker = this.data.description?.moniker
     this.identity = this.data.description?.identity || this.registryData.profile?.identity
     this.blocks = blocks || []
+    this.commission = {
+      ...this.data.commission,
+      rate: parseFloat(this.data.commission.commission_rates.rate)
+    }
+  }
+
+  delegations(){
+    const delegations = this.data.delegations
+    if(!delegations?.total_tokens) return delegations || {}
+
+    const price = this.chain.services.coingecko.price
+    if(!price) return delegations
+
+    const total_tokens = delegations.total_tokens
+    const total_tokens_display = divide(total_tokens, pow(10, this.chain.decimals))
+    const total_usd = multiply(total_tokens_display, price.usd)
+    return {
+      ...this.data.delegations,
+      total_tokens_display,
+      total_usd
+    }
   }
 
   hexAddress(){
@@ -81,7 +103,7 @@ export class Validator {
   }
 
   toJSON(){
-    const { moniker, identity, address } = this
+    const { moniker, identity, address, commission } = this
     const { path, name } = this.registryData
     return {
       path,
@@ -89,14 +111,15 @@ export class Validator {
       moniker,
       identity,
       address,
+      ...this.registryData,
+      ...this.data,
+      commission,
       hex_address: this.hexAddress(),
       uptime: this.uptimePercentage(),
       uptime_periods: this.uptimePeriods(),
       missed_blocks: this.missedBlocks().length,
       missed_blocks_periods: this.missedBlockPeriods(),
-      // ..._.omit(this.registryData, 'name'),
-      ...this.registryData,
-      ...this.data
+      delegations: this.delegations(),
     }
   }
 }

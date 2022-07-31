@@ -4,11 +4,11 @@ import _ from 'lodash'
 import { debugLog, timeStamp, executeSync, createAgent } from '../utils.js';
 import { Validator } from './validator.js';
 
-const TIMEOUT = 20000
+const TIMEOUT = 10000
 
 function ValidatorMonitor() {
   const agent = createAgent();
-  const queue = new PQueue({ concurrency: 5 });
+  const queue = new PQueue({ concurrency: 10 });
   const gotOpts = {
     timeout: { request: TIMEOUT },
     retry: { limit: 3 },
@@ -19,13 +19,11 @@ function ValidatorMonitor() {
     timeStamp('Running validator update');
     await Promise.all([...chains].map(async (chain) => {
       const apis = await chain.apis('rest')
-      const url = apis.bestAddress('rest')
       const height = apis.bestHeight('rest')
-      if(!url) return timeStamp(chain.path, 'No API URL')
 
       const current = await client.json.get('validators:' + chain.path, '$') || {}
 
-      let validators = await getAllValidators(url, height, chain, current.validators || {});
+      let validators = await getAllValidators(apis, height, chain, current.validators || {});
       if(!validators) return timeStamp(chain.path, 'Empty validator response')
       if(!validators.reduce) validators = Object.values(validators) // Agoric returns already keyed validators
       if(!validators.length) return timeStamp(chain.path, 'No validators')
@@ -43,14 +41,16 @@ function ValidatorMonitor() {
     debugLog('Validator update complete')
   }
 
-  function getAllValidators(url, height, chain, current) {
+  function getAllValidators(apis, height, chain, current) {
     const request = async () => {
       try {
+        const url = apis.bestAddress('rest')
+        if(!url) return timeStamp(chain.path, 'No API URL')
         const pages = await getAllPages((nextKey) => {
           return getValidators(url, 100, {}, nextKey);
         })
         const validators = pages.map((el) => el.validators).flat()
-        await setValidatorDetails(validators, chain, url, height)
+        await setValidatorDetails(validators, chain, height)
         return validators.reduce(
           (a, v) => ({ ...a, [v.operator_address]: {...current[v.operator_address], ...v} }),
           {}
@@ -62,22 +62,25 @@ function ValidatorMonitor() {
     return queue.add(request, { identifier: chain.path });
   }
 
-  const setValidatorDetails = async (validators, chain, url, height) => {
+  const setValidatorDetails = async (validators, chain, height) => {
     try {
       setRank(validators)
       const calls = validators.map((validator) => {
         return async () => {
+          const apis = await chain.apis('rest')
+          const url = apis.bestAddress('rest')
+          if(!url) return timeStamp(chain.path, validator.operator_address, 'No API URL')
           const model = new Validator(chain, validator)
           const consensusAddress = model.consensusAddress()
           try {
-            validator.slashes = await getSlashes(url, height, model.address)
-          } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator slashes update failed', error.message) }
-          try {
             validator.signing_info = await getSlashInfo(url, consensusAddress) || validator.signing_info
           } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator signing info update failed', error.message) }
+          try {
+            validator.slashes = await getSlashes(url, height, model.address)
+          } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator slashes update failed', error.message) }
         }
       })
-      await executeSync(calls, 10)
+      await executeSync(calls, 5)
     } catch (error) {
       timeStamp(chain.path, 'Validator details update failed', error.message)
     }
@@ -131,7 +134,7 @@ function ValidatorMonitor() {
     return got.get(url +
       "cosmos/staking/v1beta1/validators?" +
       searchParams.toString(),
-      gotOpts);
+      {...gotOpts, timeout: { request: 10000 }});
   };
 
   const getAllPages = async (getPage) => {

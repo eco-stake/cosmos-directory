@@ -1,4 +1,5 @@
 import _ from "lodash"
+import {add} from 'mathjs'
 
 export class RegistryValidator {
   constructor(data){
@@ -9,6 +10,24 @@ export class RegistryValidator {
     this.identity = this.profile.identity
     this.chains = data.chains.chains
     this.validators = {}
+  }
+
+  totalUSD(){
+    return Object.values(this.validators).reduce((sum, validator) => {
+      const delegations = validator.delegations()
+      if(!delegations?.total_usd) return sum
+
+      return add(sum, delegations.total_usd)
+    }, 0)
+  }
+
+  totalUsers(){
+    return Object.values(this.validators).reduce((sum, validator) => {
+      const delegations = validator.delegations()
+      if(!delegations?.total_count) return sum
+
+      return add(sum, delegations.total_count)
+    }, 0)
   }
 
   getChain(chainName){
@@ -34,6 +53,8 @@ export class RegistryValidator {
       path,
       name,
       identity,
+      total_usd: this.totalUSD(),
+      total_delegations: this.totalUsers(),
       ...data,
       chains: this.chains.map(chain => {
         const validator = this.validators[chain.name]
