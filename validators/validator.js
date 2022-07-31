@@ -15,7 +15,7 @@ export class Validator {
     this.blocks = blocks || []
     this.commission = {
       ...this.data.commission,
-      rate: parseFloat(this.data.commission.commission_rates.rate)
+      rate: this.data.commission && parseFloat(this.data.commission.commission_rates.rate)
     }
   }
 
