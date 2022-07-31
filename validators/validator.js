@@ -27,8 +27,10 @@ export class Validator {
     if(!price) return delegations
 
     const total_tokens = delegations.total_tokens
+    if(!total_tokens) return delegations
+
     const total_tokens_display = divide(total_tokens, pow(10, this.chain.decimals))
-    const total_usd = multiply(total_tokens_display, price.usd)
+    const total_usd = price.usd && multiply(total_tokens_display, price.usd)
     return {
       ...this.data.delegations,
       total_tokens_display,
