@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import {
   fromBase64, toHex, Bech32
 } from '@cosmjs/encoding'
@@ -5,13 +6,17 @@ import { sha256 } from '@cosmjs/crypto'
 import { multiply, divide, pow } from 'mathjs'
 
 export class Validator {
-  constructor(chain, data, registryData, blocks){
+  constructor(chain, data, blocks, registryValidator){
     this.chain = chain
     this.data = data || {}
-    this.registryData = registryData || {}
-    this.address = this.data.operator_address || this.registryData.address
+    this.registryValidator = registryValidator
+    this.registryChain = registryValidator?.getChain(this.chain.path)
+    this.path = this.registryValidator?.path
+    this.name = this.registryValidator?.name
+    this.address = this.data.operator_address || this.registryChain?.address
     this.moniker = this.data.description?.moniker
-    this.identity = this.data.description?.identity || this.registryData.profile?.identity
+    this.identity = this.data.description?.identity || this.registryValidator?.profile?.identity
+    this.restake = this.registryChain?.restake
     this.blocks = blocks || []
     this.commission = {
       ...this.data.commission,
@@ -112,24 +117,41 @@ export class Validator {
     return blocks.slice(0, max || blocks.length)
   }
 
-  toJSON(){
-    const { moniker, identity, address, commission } = this
-    const { path, name } = this.registryData
+  publicNodes(){
+    if(!this.path) return 
+
+    const apis = this.chain.chain.apis
+    return Object.keys(apis).reduce((sum, type) => {
+      const owned = apis[type].filter(api => {
+        if(!api.provider) return false
+
+        return [this.path, _.startCase(this.path), this.name.trim()].includes(api.provider)
+      })
+      if (owned.length) {
+        sum[type] = owned
+      }
+      return sum
+    }, {})
+  }
+
+  toJSON(mixedChains){
+    const { path, name, moniker, identity, address, commission, restake } = this
     return {
-      path,
-      name,
+      path: mixedChains === true ? this.chain.path : path,
+      name: mixedChains === true ? this.chain.name : name,
       moniker,
       identity,
       address,
-      ...this.registryData,
-      ...this.data,
-      commission,
       hex_address: this.hexAddress(),
+      commission,
+      ...this.data,
+      restake,
       uptime: this.uptimePercentage(),
       uptime_periods: this.uptimePeriods(),
       missed_blocks: this.missedBlocks().length,
       missed_blocks_periods: this.missedBlockPeriods(),
       delegations: this.delegations(),
+      public_nodes: this.publicNodes()
     }
   }
 }

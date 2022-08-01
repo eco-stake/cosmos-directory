@@ -59,8 +59,7 @@ export class RegistryValidator {
       chains: this.chains.map(chain => {
         const validator = this.validators[chain.name]
         return {
-          ...chain,
-          ...validator?.toJSON()
+          ...validator?.toJSON(true),
         }
       })
     }

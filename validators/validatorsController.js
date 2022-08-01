@@ -43,7 +43,7 @@ function ValidatorsController(chainRegistry, validatorRegistry) {
 
     router.get('/chains/:chain', async (ctx, next) => {
       const chain = await chainRegistry.getChain(ctx.params.chain);
-      let validators = chain && await validatorRegistry.getChainValidators(chain, ['path', 'name', 'profile'])
+      let validators = chain && await validatorRegistry.getChainValidators(chain)
       renderJson(ctx, chain && {
         name: chain.path,
         validators: _.shuffle(validators)
@@ -54,7 +54,7 @@ function ValidatorsController(chainRegistry, validatorRegistry) {
       const chain = await chainRegistry.getChain(ctx.params.chain);
       let validatorAddress = ctx.params.validatorAddress
       let registryValidator = await validatorRegistry.getRegistryValidatorFromAddress(validatorAddress)
-      let validator = await validatorRegistry.getChainValidator(chain, validatorAddress, registryValidator, ['path', 'name', 'profile'])
+      let validator = await validatorRegistry.getChainValidator(chain, validatorAddress, registryValidator)
       renderJson(ctx, validator && {
         name: chain.path,
         validator: validator
