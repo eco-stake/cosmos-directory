@@ -1,8 +1,8 @@
 import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
-import { bignumber, multiply, divide, format } from 'mathjs'
-import { createAgent, debugLog, timeStamp } from '../utils.js';
+import { bignumber, multiply, divide } from 'mathjs'
+import { createAgent, debugLog, timeStamp, formatNumber } from '../utils.js';
 
 function ChainMonitor() {
   const agent = createAgent();
@@ -26,6 +26,7 @@ function ChainMonitor() {
         let chainParams = await getChainParams(restUrl, chain, current.params || {});
 
         await client.json.set('chains:' + chain.path, '$', {
+          ...current,
           chainId: chain.chainId,
           lastUpdated: Date.now(),
           params: chainParams || current.params
@@ -224,10 +225,6 @@ function ChainMonitor() {
         bondedRatio
       }
     } catch (e) { timeStamp(chain.path, 'Supply check failed', e.message) }
-  }
-
-  function formatNumber(number) {
-    return number && format(number, { notation: 'fixed' })
   }
 
   return {

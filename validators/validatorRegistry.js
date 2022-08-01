@@ -2,7 +2,7 @@ import _ from 'lodash'
 import RegistryValidator from './registryValidator.js'
 import { Validator } from './validator.js'
 
-export const MAX_BLOCKS = 100
+export const MAX_BLOCKS = parseInt(process.env.MAX_BLOCKS || 100)
 
 function ValidatorRegistry(client) {
   async function repository() {
@@ -48,25 +48,23 @@ function ValidatorRegistry(client) {
     }))
   }
 
-  async function getChainValidator(chain, address, registryValidator, includeRegistryData) {
+  async function getChainValidator(chain, address, registryValidator) {
     const chainData = await client.json.get('validators:' + chain.path, {
       path: [
         '$.validators.' + address,
       ]
     })
     if(!chainData) return
-    return buildValidator(chain, chainData[0], registryValidator, await getBlocks(chain.path), includeRegistryData)
+    return buildValidator(chain, chainData[0], registryValidator, await getBlocks(chain.path))
   }
 
-  function buildValidator(chain, chainData, registryValidator, blocks, includeRegistryData){
+  function buildValidator(chain, chainData, registryValidator, blocks){
     if(registryValidator){
-      const registryData = includeRegistryData ? _.pick(registryValidator, includeRegistryData) : {}
-      const validatorChain = registryValidator.getChain(chain.path)
-      const validator = new Validator(chain, chainData, { ...validatorChain, ...registryData }, blocks)
+      const validator = new Validator(chain, chainData, blocks, registryValidator)
       registryValidator.setValidator(chain.path, validator)
       return validator
     }else{
-      return new Validator(chain, chainData, {}, blocks)
+      return new Validator(chain, chainData, blocks)
     }
   }
 
