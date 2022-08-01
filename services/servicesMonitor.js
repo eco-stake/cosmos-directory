@@ -1,9 +1,10 @@
 import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
-import { createAgent, debugLog, executeSync, timeStamp } from '../utils.js';
+import { createAgent, debugLog, executeSync, timeStamp, getAllPages } from '../utils.js';
 
 const SKIP_DELEGATION_COUNT = ['cosmoshub', 'cryptoorgchain', 'evmos']
+const SKIP_SLASHES = ['cryptoorgchain', 'sommelier', 'sentinel']
 
 function ServicesMonitor() {
   const agent = createAgent();
@@ -35,10 +36,13 @@ function ServicesMonitor() {
               return async () => {
                 try {
                   const apis = await chain.apis('rest')
+                  const height = apis.bestHeight('rest')
                   const url = apis.bestAddress('rest')
                   if(url){
                     const delegations = await getDelegationInfo(url, validator, chain)
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.delegations`, delegations)
+                    const slashes = !SKIP_SLASHES.includes(chain.path) ? (await getSlashes(url, height, validator.operator_address)) : null
+                    await client.json.set('validators:' + chain.path, `$.validators.${address}.slashes`, slashes)
                   }else{
                     timeStamp(chain.path, address, 'Validator delegations no API URL')
                   }
@@ -80,6 +84,19 @@ function ServicesMonitor() {
       }
       throw error
     }
+  }
+
+  const getSlashes = async (url, height, operatorAddress) => {
+    const pages = await getAllPages((nextKey) => {
+      const searchParams = new URLSearchParams();
+      searchParams.append("pagination.limit", 100);
+      searchParams.append("ending_height", height);
+      if (nextKey) searchParams.append("pagination.key", nextKey);
+      return got.get(`${url}cosmos/distribution/v1beta1/validators/${operatorAddress}/slashes?` + searchParams.toString(), gotOpts).catch(error => {
+        throw error
+      });
+    })
+    return pages.map((el) => el.slashes).flat()
   }
 
   async function refreshCoingecko(client, chains) {

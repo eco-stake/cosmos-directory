@@ -1,16 +1,15 @@
 import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
-import { debugLog, timeStamp, executeSync, createAgent } from '../utils.js';
+import { debugLog, timeStamp, executeSync, createAgent, getAllPages } from '../utils.js';
 import { Validator } from './validator.js';
 
 const SKIP_SIGNING_INFO = ['irisnet', 'tgrade']
-const SKIP_SLASHES = ['cryptoorgchain', 'sommelier', 'sentinel']
-const TIMEOUT = 10000
+const TIMEOUT = 5000
 
 function ValidatorMonitor() {
   const agent = createAgent();
-  const queue = new PQueue({ concurrency: 10 });
+  const queue = new PQueue({ concurrency: 20 });
   const gotOpts = {
     timeout: { request: TIMEOUT },
     retry: { limit: 3 },
@@ -21,11 +20,10 @@ function ValidatorMonitor() {
     timeStamp('Running validator update');
     await Promise.all([...chains].map(async (chain) => {
       const apis = await chain.apis('rest')
-      const height = apis.bestHeight('rest')
 
       const current = await client.json.get('validators:' + chain.path, '$') || {}
 
-      let validators = await getAllValidators(apis, height, chain, current.validators || {});
+      let validators = await getAllValidators(apis, chain, current.validators || {});
       if(!validators) return timeStamp(chain.path, 'Empty validator response')
       if(!validators.reduce) validators = Object.values(validators) // Agoric returns already keyed validators
       if(!validators.length) return timeStamp(chain.path, 'No validators')
@@ -43,7 +41,7 @@ function ValidatorMonitor() {
     debugLog('Validator update complete')
   }
 
-  function getAllValidators(apis, height, chain, current) {
+  function getAllValidators(apis, chain, current) {
     const request = async () => {
       try {
         const url = apis.bestAddress('rest')
@@ -52,7 +50,7 @@ function ValidatorMonitor() {
           return getValidators(url, 100, {}, nextKey);
         })
         const validators = pages.map((el) => el.validators).flat()
-        await setValidatorDetails(validators, chain, height)
+        await setValidatorDetails(validators, chain)
         return validators.reduce(
           (a, v) => ({ ...a, [v.operator_address]: {...current[v.operator_address], ...v} }),
           {}
@@ -64,7 +62,7 @@ function ValidatorMonitor() {
     return queue.add(request, { identifier: chain.path });
   }
 
-  const setValidatorDetails = async (validators, chain, height) => {
+  const setValidatorDetails = async (validators, chain) => {
     try {
       setRank(validators)
       const calls = validators.map((validator) => {
@@ -75,11 +73,8 @@ function ValidatorMonitor() {
           const model = new Validator(chain, validator)
           const consensusAddress = model.consensusAddress()
           try {
-            validator.signing_info = !SKIP_SIGNING_INFO.includes(chain.path) ? await getSlashInfo(url, consensusAddress) || validator.signing_info : undefined
+            validator.signing_info = !SKIP_SIGNING_INFO.includes(chain.path) ? await getSigningInfo(url, consensusAddress) || validator.signing_info : undefined
           } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator signing info update failed', error.message) }
-          try {
-            validator.slashes = !SKIP_SLASHES.includes(chain.path) ? await getSlashes(url, height, model.address) : undefined
-          } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator slashes update failed', error.message) }
         }
       })
       await executeSync(calls, 5)
@@ -101,20 +96,7 @@ function ValidatorMonitor() {
     })
   }
 
-  const getSlashes = async (url, height, operatorAddress) => {
-    const pages = await getAllPages((nextKey) => {
-      const searchParams = new URLSearchParams();
-      searchParams.append("pagination.limit", 100);
-      searchParams.append("ending_height", height);
-      if (nextKey) searchParams.append("pagination.key", nextKey);
-      return got.get(`${url}cosmos/distribution/v1beta1/validators/${operatorAddress}/slashes?` + searchParams.toString(), gotOpts).catch(error => {
-        throw error
-      });
-    })
-    return pages.map((el) => el.slashes).flat()
-  }
-
-  const getSlashInfo = async (url, consensusAddress) => {
+  const getSigningInfo = async (url, consensusAddress) => {
     try {
       const response = await got.get(`${url}cosmos/slashing/v1beta1/signing_infos/${consensusAddress}`, gotOpts);
       const data = JSON.parse(response.body)
@@ -136,23 +118,7 @@ function ValidatorMonitor() {
     return got.get(url +
       "cosmos/staking/v1beta1/validators?" +
       searchParams.toString(),
-      {...gotOpts, timeout: { request: 10000 }});
-  };
-
-  const getAllPages = async (getPage) => {
-    let pages = [];
-    let nextKey
-    do {
-      const result = await getPage(nextKey);
-      if(result && result.body){
-        const json = JSON.parse(result.body)
-        pages.push(json);
-        nextKey = json.pagination?.next_key;
-      }else{
-        nextKey = undefined
-      }
-    } while (nextKey);
-    return pages;
+      {...gotOpts, timeout: { request: 30000 }});
   };
 
   return {
