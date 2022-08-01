@@ -4,6 +4,8 @@ import _ from 'lodash'
 import { debugLog, timeStamp, executeSync, createAgent } from '../utils.js';
 import { Validator } from './validator.js';
 
+const SKIP_SIGNING_INFO = ['irisnet', 'tgrade']
+const SKIP_SLASHES = ['cryptoorgchain', 'sommelier', 'sentinel']
 const TIMEOUT = 10000
 
 function ValidatorMonitor() {
@@ -73,10 +75,10 @@ function ValidatorMonitor() {
           const model = new Validator(chain, validator)
           const consensusAddress = model.consensusAddress()
           try {
-            validator.signing_info = await getSlashInfo(url, consensusAddress) || validator.signing_info
+            validator.signing_info = !SKIP_SIGNING_INFO.includes(chain.path) ? await getSlashInfo(url, consensusAddress) || validator.signing_info : undefined
           } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator signing info update failed', error.message) }
           try {
-            validator.slashes = await getSlashes(url, height, model.address)
+            validator.slashes = !SKIP_SLASHES.includes(chain.path) ? await getSlashes(url, height, model.address) : undefined
           } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator slashes update failed', error.message) }
         }
       })

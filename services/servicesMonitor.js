@@ -3,6 +3,8 @@ import got from 'got';
 import _ from 'lodash'
 import { createAgent, debugLog, executeSync, timeStamp } from '../utils.js';
 
+const SKIP_DELEGATION_COUNT = ['cosmoshub', 'cryptoorgchain', 'evmos']
+
 function ServicesMonitor() {
   const agent = createAgent();
   const queue = new PQueue({ concurrency: 20 });
@@ -35,7 +37,7 @@ function ServicesMonitor() {
                   const apis = await chain.apis('rest')
                   const url = apis.bestAddress('rest')
                   if(url){
-                    const delegations = await getDelegationInfo(url, validator)
+                    const delegations = await getDelegationInfo(url, validator, chain)
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.delegations`, delegations)
                   }else{
                     timeStamp(chain.path, address, 'Validator delegations no API URL')
@@ -53,17 +55,21 @@ function ServicesMonitor() {
     } catch (e) { timeStamp('Validator delegations update failed', e.message) }
   }
 
-  const getDelegationInfo = async (url, validator) => {
+  const getDelegationInfo = async (url, validator, chain) => {
     try {
-      const searchParams = new URLSearchParams();
-      searchParams.append("pagination.limit", 1);
-      searchParams.append("pagination.count_total", true);
-      const response = await got.get(`${url}cosmos/staking/v1beta1/validators/${validator.operator_address}/delegations?${searchParams.toString()}`, gotOpts);
-      const data = JSON.parse(response.body)
-      const count = data.pagination?.total
+      let count
+      if(!SKIP_DELEGATION_COUNT.includes(chain.path)){
+        const searchParams = new URLSearchParams();
+        searchParams.append("pagination.limit", 1);
+        searchParams.append("pagination.count_total", true);
+        const response = await got.get(`${url}cosmos/staking/v1beta1/validators/${validator.operator_address}/delegations?${searchParams.toString()}`, gotOpts);
+        const data = JSON.parse(response.body)
+        count = data.pagination?.total
+        count = count ? parseInt(count) : validator.delegations.total_count
+      }
       return {
         total_tokens: validator.tokens,
-        total_count: count ? parseInt(count) : validator.delegations.total_count
+        total_count: count
       }
     } catch (error) {
       if (error.response?.statusCode === 404) {
