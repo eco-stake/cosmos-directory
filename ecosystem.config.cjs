@@ -2,6 +2,8 @@ module.exports = [{
   "name": "app",
   "script": "app.js",
   "instances": process.env.INSTANCES || 1,
+  "cron_restart": "0 */3 * * *",
+  "max_memory_restart": "200M",
   "watch": process.env.NODE_ENV === 'development'
 }, {
   "name": "chain-worker",
