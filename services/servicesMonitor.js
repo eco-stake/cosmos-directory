@@ -101,20 +101,24 @@ function ServicesMonitor() {
 
   async function refreshCoingecko(client, chains) {
     try {
-      const coingeckoIds = chains.filter(el => el.coingeckoId).map(el => el.coingeckoId).join(',')
-      const prices = await got.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoIds}&vs_currencies=usd`, gotOpts).json()
 
       await Promise.all([...chains].map((chain) => {
         const request = async () => {
           try {
-            const price = prices[chain.coingeckoId]
-            if (price) {
-              await client.json.set('chains:' + chain.path, '$.services', {}, { NX: true });
-              await client.json.set('chains:' + chain.path, '$.services.coingecko', { price });
-              debugLog(chain.path, 'Coingecko update complete')
-            } else {
-              debugLog(chain.path, 'Coingecko price not found')
-            }
+            const assets = chain.assets?.filter(el => el.coingecko_id)
+            if(!assets || !assets.length) return
+
+            const coingeckoIds = assets.map(el => el.coingecko_id).join(',')
+            const prices = await got.get(`https://api.coingecko.com/api/v3/simple/price?ids=${coingeckoIds}&vs_currencies=usd`, gotOpts).json()
+            const data = assets.reduce((sum, asset) => {
+              const price = prices[asset.coingecko_id]
+              if(price?.usd && asset.display?.denom) sum[asset.display.denom] = price
+              return sum
+            }, {})
+            await client.json.del('chains:' + chain.path, '$.services.coingecko'); // clean up
+            await client.json.set('chains:' + chain.path, '$.prices', {}, { NX: true });
+            await client.json.set('chains:' + chain.path, '$.prices.coingecko', { ...data });
+            debugLog(chain.path, 'Coingecko update complete')
           } catch (e) { timeStamp(chain.path, 'Coingecko check failed', e.message) }
         };
         return queue.add(request, { identifier: chain.path });

@@ -28,7 +28,8 @@ export class Validator {
     const delegations = this.data.delegations
     if(!delegations?.total_tokens) return delegations || {}
 
-    const price = this.chain.services?.coingecko?.price
+    const asset = this.chain.baseAsset
+    const price = asset?.prices?.coingecko
     if(!price) return delegations
 
     const total_tokens = delegations.total_tokens
