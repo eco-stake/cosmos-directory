@@ -4,17 +4,16 @@ import { renderJson } from '../utils.js';
 
 function ValidatorsController(chainRegistry, validatorRegistry) {
   function validatorSummary(validator) {
-    let chains = validator.chains.map(chain => {
-      chain = _.pick(chain, ['name', 'address', 'restake'])
-      return {
-        ...chain,
-        restake: chain.restake?.address ? chain.restake.address : false
-      }
-    }, {})
+    const json = validator.toJSON()
     return {
-      ...validator.toJSON(),
-      chains: chains
-    };
+      ...json,
+      chains: json.chains.map(chain => {
+        const attrs = ['name', 'moniker', 'identity', 'address', 'active', 'jailed',
+        'status', 'delegations', 'description', 'commission.rate', 'rank',
+        'slashes', 'image', 'restake', 'missed_blocks_periods']
+        return _.pick(chain, attrs)
+      })
+    }
   }
 
   async function repositoryResponse() {
@@ -32,7 +31,7 @@ function ValidatorsController(chainRegistry, validatorRegistry) {
     const router = new Router();
 
     router.get('/', async (ctx, next) => {
-      const validators = await validatorRegistry.getRegistryValidators()
+      const validators = await validatorRegistry.getRegistryValidatorsWithChains(chainRegistry)
       renderJson(ctx, {
         repository: await repositoryResponse(),
         validators: _.shuffle(validators).map(validator => {
@@ -43,7 +42,7 @@ function ValidatorsController(chainRegistry, validatorRegistry) {
 
     router.get('/chains/:chain', async (ctx, next) => {
       const chain = await chainRegistry.getChain(ctx.params.chain);
-      let validators = chain && await validatorRegistry.getChainValidators(chain)
+      let validators = chain && await validatorRegistry.getChainValidatorsWithRegistry(chain)
       renderJson(ctx, chain && {
         name: chain.path,
         validators: _.shuffle(validators)

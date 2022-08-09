@@ -36,14 +36,18 @@ function ValidatorRegistry(client) {
     })
   }
 
-  async function getChainValidators(chain, includeRegistryData) {
+  async function getChainValidators(chain){
     const data = await client.json.get('validators:' + chain.path, '$') || {}
-    const validators = data.validators || {}
+    return data.validators || {}
+  }
+
+  async function getChainValidatorsWithRegistry(chain) {
+    const validators = await this.getChainValidators(chain)
     const mapping = await addressMapping()
     const blocks = await getBlocks(chain.path)
     return Promise.all(Object.values(validators).map(async data => {
       const registryValidator = await getRegistryValidatorFromAddress(data.operator_address, mapping)
-      const validator = buildValidator(chain, data, registryValidator, blocks, includeRegistryData)
+      const validator = buildValidator(chain, data, registryValidator, blocks)
       return validator
     }))
   }
@@ -66,6 +70,31 @@ function ValidatorRegistry(client) {
     }else{
       return new Validator(chain, chainData, blocks)
     }
+  }
+
+  async function getRegistryValidatorsWithChains(chainRegistry) {
+    const validators = await getRegistryValidators()
+    const chainPaths = _.uniq(_.compact(validators.map(el => el.chains.map(chain => chain.name)).flat()))
+    const chains = _.compact(await chainRegistry.getChains(chainPaths))
+    const validatorData = await client.json.mGet(chains.map(el => 'validators:' + el.path), '$') || []
+    for (const [index, chain] of chains.entries()) {
+      const chainValidatorData = validatorData[index]
+      const chainValidators = (chainValidatorData && chainValidatorData[0].validators) || []
+      const registryValidators = validators.reduce((sum, validator) => {
+        const chainData = validator.chains.find(el => el.name === chain.path)
+        if (chainData) {
+          sum[chainData.address] = validator
+        }
+        return sum
+      }, {})
+      for (const chainValidator of Object.values(chainValidators)) {
+        const registryValidator = registryValidators[chainValidator.operator_address]
+        if (registryValidator) {
+          buildValidator(chain, chainValidator, registryValidator)
+        }
+      }
+    }
+    return validators
   }
 
   async function getRegistryValidatorFromAddress(address, mapping){
@@ -99,11 +128,14 @@ function ValidatorRegistry(client) {
   }
 
   return {
+    getChainValidatorsWithRegistry,
     getChainValidators,
     getChainValidator,
+    getRegistryValidatorsWithChains,
     getRegistryValidatorFromAddress,
     getRegistryValidators,
     getRegistryValidator,
+    buildValidator,
     paths,
     repository,
     commit

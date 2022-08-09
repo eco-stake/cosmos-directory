@@ -16,6 +16,7 @@ export class Validator {
     this.address = this.data.operator_address || this.registryChain?.address
     this.moniker = this.data.description?.moniker
     this.identity = this.data.description?.identity || this.registryValidator?.profile?.identity
+    this.active = this.data.status && this.data.status === 'BOND_STATUS_BONDED'
     this.restake = this.registryChain?.restake
     this.blocks = blocks || []
     this.commission = {
@@ -84,10 +85,12 @@ export class Validator {
         missed: 100 - this.signedBlocks(100).length
       })
     }
-    periods.push({
-      blocks: this.blocks.length,
-      missed: this.blocks.length - this.signedBlocks().length
-    })
+    if(this.blocks.length > 0){
+      periods.push({
+        blocks: this.blocks.length,
+        missed: this.blocks.length - this.signedBlocks().length
+      })
+    }
     const chainParams = this.chain.params
     const slashingPeriod = chainParams.slashing?.signed_blocks_window
     const slashingMissed = this.data.signing_info?.missed_blocks_counter
@@ -136,16 +139,18 @@ export class Validator {
   }
 
   toJSON(mixedChains){
-    const { path, name, moniker, identity, address, commission, restake } = this
+    const { path, name, moniker, identity, address, commission, restake, active } = this
     return {
       path: mixedChains === true ? this.chain.path : path,
       name: mixedChains === true ? this.chain.name : name,
       moniker,
       identity,
       address,
+      active,
       hex_address: this.hexAddress(),
-      commission,
       ...this.data,
+      image: this.data.mintscan_image || this.data.keybase_image,
+      commission,
       restake,
       uptime: this.uptimePercentage(),
       uptime_periods: this.uptimePeriods(),

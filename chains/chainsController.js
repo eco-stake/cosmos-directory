@@ -3,7 +3,7 @@ import { renderJson } from '../utils.js';
 
 function ChainsController(registry) {
   async function chainResponse(chain, summarize) {
-    const { chain_name, network_type, pretty_name, chain_id, status } = chain.chain;
+    const { chain_name, network_type, pretty_name, chain_id, status, explorers } = chain.chain;
     const baseAsset = chain.baseAsset
     const apis = await chain.apis()
     const { params, services, prices, assets } = chain
@@ -26,13 +26,8 @@ function ChainsController(registry) {
         rest: apis.bestUrls('rest'),
         rpc: apis.bestUrls('rpc')
       },
-      params: {
-        authz: params?.authz,
-        bonded_tokens: params?.bonded_tokens,
-        total_supply: params?.total_supply,
-        actual_block_time: params?.actual_block_time,
-        calculated_apr: params?.calculated_apr,
-      },
+      explorers,
+      params,
       services,
       prices,
       assets
@@ -40,7 +35,7 @@ function ChainsController(registry) {
     if (summarize) {
       return response
     } else {
-      return { ...chain.chain, ...response, params, services, prices, assets }
+      return { ...chain.chain, ...response }
     } 
   }
 

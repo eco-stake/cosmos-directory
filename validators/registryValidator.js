@@ -53,12 +53,14 @@ export class RegistryValidator {
       path,
       name,
       identity,
+      image: this.chains[0]?.image,
       total_usd: this.totalUSD(),
-      total_delegations: this.totalUsers(),
+      total_users: this.totalUsers(),
       ...data,
       chains: this.chains.map(chain => {
         const validator = this.validators[chain.name]
         return {
+          ...chain,
           ...validator?.toJSON(true),
         }
       })

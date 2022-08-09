@@ -13,8 +13,8 @@ function ChainRegistry(client) {
     return await client.json.get('chain-registry:paths', '$') || []
   }
 
-  async function getChains() {
-    const chainPaths = await paths()
+  async function getChains(chainPaths) {
+    chainPaths = chainPaths || await paths()
     return Promise.all(chainPaths.map(async path => {
       return await getChain(path)
     }))
