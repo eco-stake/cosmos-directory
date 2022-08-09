@@ -102,6 +102,7 @@ function ValidatorsController(chainRegistry, validatorRegistry) {
             nodes: [{
               address: validator.address,
               fee: validator.commission.rate,
+              slashes: validator.data.slashes,
               users: delegations.total_count,
               balanceUsd: delegations.total_usd,
               balanceToken: delegations.total_tokens_display,
