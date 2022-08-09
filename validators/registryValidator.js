@@ -9,6 +9,7 @@ export class RegistryValidator {
     this.name = this.profile.name
     this.identity = this.profile.identity
     this.chains = data.chains.chains
+    this.services = data.services?.services
     this.validators = {}
   }
 
@@ -48,7 +49,7 @@ export class RegistryValidator {
   }
 
   toJSON(){
-    const { path, name, identity, data } = this
+    const { path, name, identity, data, services } = this
     return {
       path,
       name,
@@ -63,7 +64,8 @@ export class RegistryValidator {
           ...chain,
           ...validator?.toJSON(true),
         }
-      })
+      }),
+      services
     }
   }
 }
