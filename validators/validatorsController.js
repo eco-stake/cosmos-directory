@@ -92,9 +92,10 @@ function ValidatorsController(chainRegistry, validatorRegistry) {
         users: registryValidator.totalUsers(),
         supportedAssets: Object.values(registryValidator.validators).map(validator => {
           const delegations = validator.delegations()
+          const slug = validator.chain.services?.staking_rewards?.slug || validator.chain.coingeckoId
           return {
             name: validator.chain.prettyName,
-            slug: validator.chain.coingeckoId,
+            slug: slug,
             balanceTokenTotal: delegations.total_tokens_display,
             balanceUsdTotal: delegations.total_usd,
             usersTotal: delegations.total_count,
