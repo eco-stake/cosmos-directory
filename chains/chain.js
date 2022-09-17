@@ -53,6 +53,7 @@ function Chain(client, data, paramsData) {
     ...data,
     params,
     services,
+    website,
     apis,
     baseAsset,
     getDataset
