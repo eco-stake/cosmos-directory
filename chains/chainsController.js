@@ -3,10 +3,10 @@ import { renderJson } from '../utils.js';
 
 function ChainsController(registry) {
   async function chainResponse(chain, summarize) {
-    const { chain_name, network_type, pretty_name, chain_id, status } = chain.chain;
-    const baseAsset = chain.baseAsset()
+    const { chain_name, network_type, pretty_name, chain_id, status, explorers } = chain.chain;
+    const baseAsset = chain.baseAsset
     const apis = await chain.apis()
-    const params = chain.params
+    const { params, services, prices, assets } = chain
     const response = {
       name: chain_name,
       path: chain.path,
@@ -15,28 +15,27 @@ function ChainsController(registry) {
       pretty_name,
       chain_id,
       status,
-      symbol: baseAsset && baseAsset.symbol,
-      denom: baseAsset && baseAsset.denom,
-      decimals: baseAsset && baseAsset.decimals,
-      coingecko_id: baseAsset && baseAsset.coingecko_id,
-      image: baseAsset && baseAsset.image,
+      symbol: baseAsset?.symbol,
+      display: baseAsset?.display?.denom,
+      denom: baseAsset?.denom,
+      decimals: baseAsset?.decimals,
+      coingecko_id: baseAsset?.coingecko_id,
+      image: baseAsset?.image,
       height: apis.bestHeight(),
       best_apis: {
         rest: apis.bestUrls('rest'),
         rpc: apis.bestUrls('rpc')
       },
-      params: {
-        authz: params?.authz,
-        bonded_tokens: params?.bonded_tokens,
-        total_supply: params?.total_supply,
-        actual_block_time: params?.actual_block_time,
-        calculated_apr: params?.calculated_apr,
-      }
+      explorers,
+      params,
+      services,
+      prices,
+      assets
     };
     if (summarize) {
       return response
     } else {
-      return { ...chain.chain, ...response, params: params, services: chain.services }
+      return { ...chain.chain, ...response }
     } 
   }
 

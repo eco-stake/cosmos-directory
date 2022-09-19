@@ -7,10 +7,16 @@ const CONSENSUS_PREFIXES = {
 
 function Chain(client, data, paramsData) {
   const { path, chain, assetlist } = data;
-  const { params, services } = paramsData
+  const { params, services, prices } = paramsData
 
   chain.name = chain.chain_name
-  const assets = assetlist && assetlist.assets.map(el => ChainAsset(el));
+  const coingecko = prices?.coingecko || {}
+  const assets = assetlist && assetlist.assets.map(asset => {
+    const price = coingecko[asset.display]
+
+    return ChainAsset(asset, price && { coingecko: price })
+  });
+  const baseAsset = assets && assets[0]
 
   const prefix = chain.bech32_prefix
   const consensusPrefix = CONSENSUS_PREFIXES[path] || `${prefix}valcons`
@@ -31,10 +37,6 @@ function Chain(client, data, paramsData) {
     return type ? {[type]: health[0]} : health
   }
 
-  function baseAsset(){
-    return assets && assets[0]
-  }
-
   function getDataset(dataset){
     dataset = ['path'].includes(dataset) ? undefined : dataset
     return dataset && data[dataset]
@@ -45,16 +47,19 @@ function Chain(client, data, paramsData) {
     chainId: chain.chain_id,
     name: chain.name,
     prettyName: chain.pretty_name,
-    denom: baseAsset()?.denom,
-    symbol: baseAsset()?.symbol,
+    denom: baseAsset?.denom,
+    symbol: baseAsset?.symbol,
+    decimals: baseAsset?.decimals,
+    coingeckoId: baseAsset?.coingecko_id,
+    baseAsset,
     assets,
     prefix,
     consensusPrefix,
     ...data,
     params,
     services,
+    prices,
     apis,
-    baseAsset,
     getDataset
   };
 }

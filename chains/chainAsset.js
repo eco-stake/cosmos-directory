@@ -1,21 +1,23 @@
-function ChainAsset(data) {
-  const { name, display, symbol, coingecko_id } = data
+function ChainAsset(data, prices) {
+  const { name, description, symbol, coingecko_id, denom_units } = data
   const base = data.denom_units.find(el => el.denom === data.base)
-  const token = data.denom_units.find(el => el.denom === data.display)
+  const display = data.denom_units.find(el => el.denom === data.display)
   const logo_URIs = data.logo_URIs
   const image = logo_URIs && (logo_URIs.svg || logo_URIs.png)
 
   return {
     name,
-    display,
+    description,
     symbol,
     denom: base?.denom,
-    decimals: token?.exponent ?? 6,
+    decimals: display?.exponent ?? 6,
     coingecko_id,
     base,
-    token,
+    display,
+    denom_units,
     logo_URIs,
-    image
+    image,
+    prices
   }
 }
 

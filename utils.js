@@ -1,5 +1,10 @@
 import _ from "lodash";
 import Agent from 'agentkeepalive'
+import { format } from 'mathjs'
+
+export function formatNumber(number) {
+  return number && format(number, { notation: 'fixed' })
+}
 
 export function debugLog(...args) {
   if(process.env.DEBUG === '1'){
@@ -30,6 +35,22 @@ export async function executeSync(calls, count){
     await mapAsync(batchCall, call => call())
   }
 }
+
+export async function getAllPages(getPage){
+  let pages = [];
+  let nextKey
+  do {
+    const result = await getPage(nextKey);
+    if(result && result.body){
+      const json = JSON.parse(result.body)
+      pages.push(json);
+      nextKey = json.pagination?.next_key;
+    }else{
+      nextKey = undefined
+    }
+  } while (nextKey);
+  return pages;
+};
 
 export function createAgent(opts) {
   const agentOpts = {

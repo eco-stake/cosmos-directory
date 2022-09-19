@@ -1,17 +1,48 @@
+import _ from 'lodash'
 import {
   fromBase64, toHex, Bech32
 } from '@cosmjs/encoding'
 import { sha256 } from '@cosmjs/crypto'
+import { multiply, divide, pow } from 'mathjs'
 
 export class Validator {
-  constructor(chain, data, registryData, blocks){
+  constructor(chain, data, blocks, registryValidator){
     this.chain = chain
     this.data = data || {}
-    this.registryData = registryData || {}
-    this.address = this.data.operator_address || this.registryData.address
+    this.registryValidator = registryValidator
+    this.registryChain = registryValidator?.getChain(this.chain.path)
+    this.path = this.registryValidator?.path
+    this.name = this.registryValidator?.name
+    this.address = this.data.operator_address || this.registryChain?.address
     this.moniker = this.data.description?.moniker
-    this.identity = this.data.description?.identity || this.registryData.profile?.identity
+    this.identity = this.data.description?.identity || this.registryValidator?.profile?.identity
+    this.active = this.data.status && this.data.status === 'BOND_STATUS_BONDED'
+    this.restake = this.registryChain?.restake
     this.blocks = blocks || []
+    this.commission = {
+      ...this.data.commission,
+      rate: this.data.commission && parseFloat(this.data.commission.commission_rates.rate)
+    }
+  }
+
+  delegations(){
+    const delegations = this.data.delegations
+    if(!delegations?.total_tokens) return delegations || {}
+
+    const asset = this.chain.baseAsset
+    const price = asset?.prices?.coingecko
+    if(!price) return delegations
+
+    const total_tokens = delegations.total_tokens
+    if(!total_tokens) return delegations
+
+    const total_tokens_display = divide(total_tokens, pow(10, this.chain.decimals))
+    const total_usd = price.usd && multiply(total_tokens_display, price.usd)
+    return {
+      ...this.data.delegations,
+      total_tokens_display,
+      total_usd
+    }
   }
 
   hexAddress(){
@@ -48,10 +79,18 @@ export class Validator {
 
   missedBlockPeriods(){
     const periods = []
-    periods.push({
-      blocks: this.blocks.length,
-      missed: this.blocks.length - this.signedBlocks().length
-    })
+    if(this.blocks.length > 200){
+      periods.push({
+        blocks: 100,
+        missed: 100 - this.signedBlocks(100).length
+      })
+    }
+    if(this.blocks.length > 0){
+      periods.push({
+        blocks: this.blocks.length,
+        missed: this.blocks.length - this.signedBlocks().length
+      })
+    }
     const chainParams = this.chain.params
     const slashingPeriod = chainParams.slashing?.signed_blocks_window
     const slashingMissed = this.data.signing_info?.missed_blocks_counter
@@ -66,37 +105,59 @@ export class Validator {
     })
   }
 
-  missedBlocks(){
+  missedBlocks(max){
     const hexAddress = this.hexAddress()
-    return this.blocks.filter(block => {
+    const blocks = this.blocks.filter(block => {
       return !block.signatures.find(el => el === hexAddress)
     })
+    return blocks.slice(0, max || blocks.length)
   }
 
-  signedBlocks(){
+  signedBlocks(max){
     const hexAddress = this.hexAddress()
-    return this.blocks.filter(block => {
+    const blocks = this.blocks.filter(block => {
       return block.signatures.find(el => el === hexAddress)
     })
+    return blocks.slice(0, max || blocks.length)
   }
 
-  toJSON(){
-    const { moniker, identity, address } = this
-    const { path, name } = this.registryData
+  publicNodes(){
+    if(!this.path) return 
+
+    const apis = this.chain.chain.apis
+    return Object.keys(apis).reduce((sum, type) => {
+      const owned = apis[type].filter(api => {
+        if(!api.provider) return false
+
+        return [this.path, _.startCase(this.path), this.name.trim()].includes(api.provider)
+      })
+      if (owned.length) {
+        sum[type] = owned
+      }
+      return sum
+    }, {})
+  }
+
+  toJSON(mixedChains){
+    const { path, name, moniker, identity, address, commission, restake, active } = this
     return {
-      path,
-      name,
+      path: mixedChains === true ? this.chain.path : path,
+      name: mixedChains === true ? this.chain.name : name,
       moniker,
       identity,
       address,
+      active,
       hex_address: this.hexAddress(),
+      ...this.data,
+      image: this.data.mintscan_image || this.data.keybase_image,
+      commission,
+      restake,
       uptime: this.uptimePercentage(),
       uptime_periods: this.uptimePeriods(),
       missed_blocks: this.missedBlocks().length,
       missed_blocks_periods: this.missedBlockPeriods(),
-      // ..._.omit(this.registryData, 'name'),
-      ...this.registryData,
-      ...this.data
+      delegations: this.delegations(),
+      public_nodes: this.publicNodes()
     }
   }
 }

@@ -2,7 +2,7 @@ import _ from 'lodash'
 import RegistryValidator from './registryValidator.js'
 import { Validator } from './validator.js'
 
-export const MAX_BLOCKS = 100
+export const MAX_BLOCKS = parseInt(process.env.MAX_BLOCKS || 100)
 
 function ValidatorRegistry(client) {
   async function repository() {
@@ -36,38 +36,65 @@ function ValidatorRegistry(client) {
     })
   }
 
-  async function getChainValidators(chain, includeRegistryData) {
+  async function getChainValidators(chain){
     const data = await client.json.get('validators:' + chain.path, '$') || {}
-    const validators = data.validators || {}
+    return data.validators || {}
+  }
+
+  async function getChainValidatorsWithRegistry(chain) {
+    const validators = await this.getChainValidators(chain)
     const mapping = await addressMapping()
     const blocks = await getBlocks(chain.path)
     return Promise.all(Object.values(validators).map(async data => {
       const registryValidator = await getRegistryValidatorFromAddress(data.operator_address, mapping)
-      const validator = buildValidator(chain, data, registryValidator, blocks, includeRegistryData)
+      const validator = buildValidator(chain, data, registryValidator, blocks)
       return validator
     }))
   }
 
-  async function getChainValidator(chain, address, registryValidator, includeRegistryData) {
+  async function getChainValidator(chain, address, registryValidator) {
     const chainData = await client.json.get('validators:' + chain.path, {
       path: [
         '$.validators.' + address,
       ]
     })
     if(!chainData) return
-    return buildValidator(chain, chainData[0], registryValidator, await getBlocks(chain.path), includeRegistryData)
+    return buildValidator(chain, chainData[0], registryValidator, await getBlocks(chain.path))
   }
 
-  function buildValidator(chain, chainData, registryValidator, blocks, includeRegistryData){
+  function buildValidator(chain, chainData, registryValidator, blocks){
     if(registryValidator){
-      const registryData = includeRegistryData ? _.pick(registryValidator, includeRegistryData) : {}
-      const validatorChain = registryValidator.getChain(chain.path)
-      const validator = new Validator(chain, chainData, { ...validatorChain, ...registryData }, blocks)
+      const validator = new Validator(chain, chainData, blocks, registryValidator)
       registryValidator.setValidator(chain.path, validator)
       return validator
     }else{
-      return new Validator(chain, chainData, {}, blocks)
+      return new Validator(chain, chainData, blocks)
     }
+  }
+
+  async function getRegistryValidatorsWithChains(chainRegistry) {
+    const validators = await getRegistryValidators()
+    const chainPaths = _.uniq(_.compact(validators.map(el => el.chains.map(chain => chain.name)).flat()))
+    const chains = _.compact(await chainRegistry.getChains(chainPaths))
+    const validatorData = await client.json.mGet(chains.map(el => 'validators:' + el.path), '$') || []
+    for (const [index, chain] of chains.entries()) {
+      const chainValidatorData = validatorData[index]
+      const chainValidators = (chainValidatorData && chainValidatorData[0].validators) || []
+      const registryValidators = validators.reduce((sum, validator) => {
+        const chainData = validator.chains.find(el => el.name === chain.path)
+        if (chainData) {
+          sum[chainData.address] = validator
+        }
+        return sum
+      }, {})
+      for (const chainValidator of Object.values(chainValidators)) {
+        const registryValidator = registryValidators[chainValidator.operator_address]
+        if (registryValidator) {
+          buildValidator(chain, chainValidator, registryValidator)
+        }
+      }
+    }
+    return validators
   }
 
   async function getRegistryValidatorFromAddress(address, mapping){
@@ -101,11 +128,14 @@ function ValidatorRegistry(client) {
   }
 
   return {
+    getChainValidatorsWithRegistry,
     getChainValidators,
     getChainValidator,
+    getRegistryValidatorsWithChains,
     getRegistryValidatorFromAddress,
     getRegistryValidators,
     getRegistryValidator,
+    buildValidator,
     paths,
     repository,
     commit
