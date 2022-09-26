@@ -5,11 +5,12 @@ import { createAgent, debugLog, executeSync, timeStamp, getAllPages } from '../u
 
 const SKIP_DELEGATION_COUNT = ['cosmoshub', 'cryptoorgchain', 'evmos']
 const SKIP_SLASHES = ['cryptoorgchain', 'sommelier', 'sentinel']
-const VALIDATOR_THROTTLE = 2500
+const VALIDATOR_THROTTLE = process.env.VALIDATOR_THROTTLE ?? 5000
 
 function ServicesMonitor() {
   const agent = createAgent();
-  const queue = new PQueue({ concurrency: 20 });
+  const chainQueue = new PQueue({ concurrency: 20 });
+  const serviceQueue = new PQueue({ concurrency: 10 });
   const gotOpts = {
     timeout: { request: 60000 },
     retry: { limit: 2 },
@@ -57,7 +58,7 @@ function ServicesMonitor() {
             debugLog(chain.path, 'Validator delegations update complete')
           } catch (e) { timeStamp(chain.path, 'Validator delegations update failed', e.message) }
         };
-        return queue.add(request, { identifier: chain.path });
+        return chainQueue.add(request, { identifier: chain.path });
       }));
       debugLog('Validator delegations update complete')
     } catch (e) { timeStamp('Validator delegations update failed', e.message) }
@@ -120,12 +121,13 @@ function ServicesMonitor() {
               return sum
             }, {})
             await client.json.del('chains:' + chain.path, '$.services.coingecko'); // clean up
+            await client.json.set('chains:' + chain.path, '$', {}, { NX: true });
             await client.json.set('chains:' + chain.path, '$.prices', {}, { NX: true });
             await client.json.set('chains:' + chain.path, '$.prices.coingecko', { ...data });
             debugLog(chain.path, 'Coingecko update complete')
           } catch (e) { timeStamp(chain.path, 'Coingecko check failed', e.message) }
         };
-        return queue.add(request, { identifier: chain.path });
+        return serviceQueue.add(request, { identifier: chain.path });
       }));
       debugLog('Coingecko update complete')
     } catch (e) { timeStamp('Coingecko check failed', e.message) }
@@ -175,7 +177,7 @@ function ServicesMonitor() {
             }
           } catch (e) { timeStamp(chain.path, 'Staking Rewards check failed', e.message) }
         };
-        return queue.add(request, { identifier: chain.path });
+        return serviceQueue.add(request, { identifier: chain.path });
       }));
       debugLog('Staking Rewards update complete')
     } catch (e) { timeStamp('Staking Rewards check failed', e.message) }
