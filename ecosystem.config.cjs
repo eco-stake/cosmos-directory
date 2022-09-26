@@ -3,7 +3,7 @@ module.exports = [{
   "script": "app.js",
   "instances": process.env.INSTANCES || 1,
   "cron_restart": "0 */3 * * *",
-  "max_memory_restart": "300M",
+  "max_memory_restart": process.env.MAX_MEMORY_RESTART || "350M",
   "watch": process.env.NODE_ENV === 'development'
 }, {
   "name": "chain-worker",
