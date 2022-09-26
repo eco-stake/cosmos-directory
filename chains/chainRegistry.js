@@ -1,6 +1,5 @@
 import fs from 'fs'
 import _ from 'lodash'
-import { join } from 'path';
 import Chain from './chain.js'
 
 function ChainRegistry(client) {
@@ -36,11 +35,11 @@ function ChainRegistry(client) {
 
   function getConfig(path){
     try {
-      const systemConfigFile = fs.readFileSync(join(process.cwd(), 'config/config.json'));
+      const systemConfigFile = fs.readFileSync('config/config.json');
       const systemConfig = systemConfigFile && JSON.parse(systemConfigFile) || {}
       let localConfigFile
       try {
-        localConfigFile = fs.readFileSync(join(process.cwd(), 'config/config.local.json'));
+        localConfigFile = fs.readFileSync('config/config.local.json');
       } catch {}
       const localConfig = localConfigFile && JSON.parse(localConfigFile) || {}
       const config = _.mergeWith(systemConfig, localConfig, (a, b) =>
