@@ -35,9 +35,9 @@ function ServicesMonitor() {
             const calls = Object.entries(validators.validators).map(([address, validator]) => {
               return async () => {
                 try {
-                  const apis = await chain.apis('rest')
-                  const height = apis.bestHeight('rest')
-                  const url = apis.bestAddress('rest')
+                  const apis = await chain.apis()
+                  const height = apis.bestHeight('rest', true)
+                  const url = apis.bestAddress('rest', true)
                   if(url){
                     const delegations = await getDelegationInfo(url, validator, chain)
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.delegations`, delegations)
@@ -69,7 +69,7 @@ function ServicesMonitor() {
         const response = await got.get(`${url}cosmos/staking/v1beta1/validators/${validator.operator_address}/delegations?${searchParams.toString()}`, gotOpts);
         const data = JSON.parse(response.body)
         count = data.pagination?.total
-        count = count ? parseInt(count) : validator.delegations.total_count
+        count = count ? parseInt(count) : validator.delegations?.total_count
       }
       return {
         total_tokens: validator.tokens,
@@ -79,7 +79,7 @@ function ServicesMonitor() {
       if (error.response?.statusCode === 404) {
         return {
           total_tokens: validator.tokens,
-          total_count: validator.delegations.total_count
+          total_count: validator.delegations?.total_count
         }
       }
       throw error

@@ -5,17 +5,22 @@ const BEST_RESPONSE_DIFF = 1
 const BEST_ERROR_DIFF = 5 * 60
 const IGNORE_ERROR_DIFF = 60 * 60
 
-function ChainApis(apis, health) {
-  function bestAddress(type) {
+function ChainApis(health) {
+  function bestAddress(type, includeServiceApis) {
+    if(type === 'rest' && includeServiceApis){
+      const bestService = bestAddress('service')
+      if(bestService) return bestService
+    }
     const urls = bestUrls(type)
     const best = _.sample(urls)
     return best && best.address
   }
 
-  function bestHeight(type) {
+  function bestHeight(type, includeServiceApis) {
     let urls
     if(type){
-      urls = Object.values(health[type] || {})
+      urls = includeServiceApis ? Object.values(health['service'] || {}) : []
+      urls = urls.concat(Object.values(health[type] || {}))
     }else{
       urls = Object.values(health).reduce((sum, urls) => {
         return sum.concat(Object.values(urls))
@@ -60,7 +65,6 @@ function ChainApis(apis, health) {
     bestAddress,
     bestUrls,
     bestHeight,
-    apis,
     health
   }
 }

@@ -1,3 +1,6 @@
+import fs from 'fs'
+
+import { timeStamp } from "../utils.js";
 import ChainApis from "./chainApis.js";
 import ChainAsset from './chainAsset.js'
 
@@ -23,7 +26,11 @@ function Chain(client, data, paramsData) {
 
   async function apis(type){
     const health = await apiHealth(type)
-    return ChainApis(chain.apis || {}, health)
+    return ChainApis(health)
+  }
+
+  function apiUrls(type){
+    return (chain.apis || {})[type]
   }
   
   async function apiHealth(type) {
@@ -35,6 +42,23 @@ function Chain(client, data, paramsData) {
     }
     const health = await client.json.get('health:' + path, healthPath) || {}
     return type ? {[type]: health[0]} : health
+  }
+
+  function serviceApis(){
+    return (localConfig().serviceApis || []).map(address => {
+      return { address }
+    })
+  }
+
+  function localConfig(){
+    try {
+      const localConfig = fs.readFileSync('config.local.json');
+      const config = localConfig && JSON.parse(localConfig) || {}
+      return config[path] || {}
+    } catch (error) {
+      timeStamp('Failed to parse config.local.json, check JSON is valid', error.message)
+      return {}
+    }
   }
 
   function getDataset(dataset){
@@ -60,6 +84,8 @@ function Chain(client, data, paramsData) {
     services,
     prices,
     apis,
+    apiUrls,
+    serviceApis,
     getDataset
   };
 }

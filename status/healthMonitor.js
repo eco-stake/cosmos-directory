@@ -16,8 +16,8 @@ function HealthMonitor() {
     timeStamp('Running health checks');
     await Promise.all([...chains].map(async (chain) => {
       const apis = await chain.apis()
-      await Promise.all(['rpc', 'rest'].map(async (type) => {
-        const urls = apis.apis[type] || [];
+      await Promise.all(['rpc', 'rest', 'service'].map(async (type) => {
+        const urls = (type === 'service' ? chain.serviceApis() : chain.apiUrls(type)) || [];
         const health = apis.health[type] || {};
         const updated = await Promise.all([...urls].map(async (url) => {
           const urlHealth = health[url.address] || {};
@@ -53,7 +53,13 @@ function HealthMonitor() {
   }
 
   function urlPath(type) {
-    return type === 'rest' ? 'blocks/latest' : 'block';
+    switch (type) {
+      case "rest":
+      case "service":
+        return 'blocks/latest'
+      case "rpc":
+        return "block"
+    }
   }
 
   function buildUrl(type, chain, url, urlHealth, response, error) {

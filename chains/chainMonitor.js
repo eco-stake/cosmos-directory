@@ -17,8 +17,8 @@ function ChainMonitor() {
     timeStamp('Running chain update');
     await Promise.all([...chains].map((chain) => {
       const request = async () => {
-        const apis = await chain.apis('rest')
-        const restUrl = apis.bestAddress('rest')
+        const apis = await chain.apis()
+        const restUrl = apis.bestAddress('rest', true)
         if (!restUrl) return timeStamp(chain.path, 'No API URL')
 
         const current = await client.json.get('chains:' + chain.path, '$') || {}

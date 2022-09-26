@@ -19,7 +19,7 @@ function ValidatorMonitor() {
   async function refreshValidators(client, chains) {
     timeStamp('Running validator update');
     await Promise.all([...chains].map(async (chain) => {
-      const apis = await chain.apis('rest')
+      const apis = await chain.apis()
 
       const current = await client.json.get('validators:' + chain.path, '$') || {}
 
@@ -44,7 +44,7 @@ function ValidatorMonitor() {
   function getAllValidators(apis, chain, current) {
     const request = async () => {
       try {
-        const url = apis.bestAddress('rest')
+        const url = apis.bestAddress('rest', true)
         if(!url) return timeStamp(chain.path, 'No API URL')
         const pages = await getAllPages((nextKey) => {
           return getValidators(url, 100, {}, nextKey);
@@ -67,8 +67,8 @@ function ValidatorMonitor() {
       setRank(validators)
       const calls = validators.map((validator) => {
         return async () => {
-          const apis = await chain.apis('rest')
-          const url = apis.bestAddress('rest')
+          const apis = await chain.apis()
+          const url = apis.bestAddress('rest', true)
           if(!url) return timeStamp(chain.path, validator.operator_address, 'No API URL')
           const model = new Validator(chain, validator)
           const consensusAddress = model.consensusAddress()
