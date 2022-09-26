@@ -37,7 +37,10 @@ function ChainRegistry(client) {
     try {
       const systemConfigFile = fs.readFileSync('config/config.json');
       const systemConfig = systemConfigFile && JSON.parse(systemConfigFile) || {}
-      const localConfigFile = fs.readFileSync('config/config.local.json');
+      let localConfigFile
+      try {
+        localConfigFile = fs.readFileSync('config/config.local.json');
+      } catch {}
       const localConfig = localConfigFile && JSON.parse(localConfigFile) || {}
       const config = _.mergeWith(systemConfig, localConfig, (a, b) =>
         _.isArray(b) ? b : undefined
