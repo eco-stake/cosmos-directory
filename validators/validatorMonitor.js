@@ -4,7 +4,6 @@ import _ from 'lodash'
 import { debugLog, timeStamp, executeSync, createAgent, getAllPages } from '../utils.js';
 import { Validator } from './validator.js';
 
-const SKIP_SIGNING_INFO = ['irisnet', 'tgrade']
 const TIMEOUT = 5000
 
 function ValidatorMonitor() {
@@ -73,7 +72,7 @@ function ValidatorMonitor() {
           const model = new Validator(chain, validator)
           const consensusAddress = model.consensusAddress()
           try {
-            validator.signing_info = !SKIP_SIGNING_INFO.includes(chain.path) ? await getSigningInfo(url, consensusAddress) || validator.signing_info : undefined
+            validator.signing_info = chain.config.monitor.signing_info ? await getSigningInfo(url, consensusAddress) || validator.signing_info : undefined
           } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator signing info update failed', error.message) }
         }
       })

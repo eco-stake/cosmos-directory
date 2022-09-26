@@ -1,0 +1,46 @@
+{
+  "cosmoshub": {
+    "monitor": {
+      "delegations": false,
+      "slashes": false
+    }
+  },
+  "cryptoorgchain": {
+    "consensusPrefix": "crocnclcons",
+    "monitor": {
+      "delegations": false,
+      "slashes": false
+    }
+  },
+  "evmos": {
+    "monitor": {
+      "delegations": false
+    }
+  },
+  "irisnet": {
+    "monitor": {
+      "signing_info": false
+    }
+  },
+  "juno": {
+    "monitor": {
+      "delegations": false,
+      "slashes": false
+    }
+  },
+  "sentinel": {
+    "monitor": {
+      "slashes": false
+    }
+  },
+  "sommelier": {
+    "monitor": {
+      "slashes": false
+    }
+  },
+  "tgrade": {
+    "monitor": {
+      "signing_info": false
+    }
+  }
+}

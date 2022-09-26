@@ -1,3 +1,5 @@
+import fs from 'fs'
+import _ from 'lodash'
 import Chain from './chain.js'
 
 function ChainRegistry(client) {
@@ -15,18 +17,36 @@ function ChainRegistry(client) {
 
   async function getChains(chainPaths) {
     chainPaths = chainPaths || await paths()
+    const config = getConfig()
     return Promise.all(chainPaths.map(async path => {
-      return await getChain(path)
+      return await getChain(path, config[path] || {})
     }))
   }
 
-  async function getChain(path) {
+  async function getChain(path, config) {
+    config = config || getConfig(path)
     const data = await client.json.get('chain-registry:' + path, '$') || {}
     if (!data.chain)
       return
 
     const params = await client.json.get('chains:' + path, '$') || {}
-    return Chain(client, data, params)
+    return Chain(client, data, params, config)
+  }
+
+  function getConfig(path){
+    try {
+      const systemConfigFile = fs.readFileSync('config/config.json');
+      const systemConfig = systemConfigFile && JSON.parse(systemConfigFile) || {}
+      const localConfigFile = fs.readFileSync('config/config.local.json');
+      const localConfig = localConfigFile && JSON.parse(localConfigFile) || {}
+      const config = _.mergeWith(systemConfig, localConfig, (a, b) =>
+        _.isArray(b) ? b : undefined
+      )
+      return (path ? config[path] : config) || {}
+    } catch (error) {
+      console.log(error)
+      return {}
+    }
   }
 
   return {

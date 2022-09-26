@@ -1,14 +1,16 @@
-import fs from 'fs'
-
-import { timeStamp } from "../utils.js";
 import ChainApis from "./chainApis.js";
 import ChainAsset from './chainAsset.js'
 
-const CONSENSUS_PREFIXES = {
-  cryptoorgchain: 'crocnclcons'
-}
-
-function Chain(client, data, paramsData) {
+function Chain(client, data, paramsData, opts) {
+  const config = {
+    consensusPrefix: `${data.chain.bech32_prefix}valcons`,
+    monitor: {
+      delegations: true,
+      slashes: true,
+      signing_info: true
+    },
+    ...opts
+  }
   const { path, chain, assetlist } = data;
   const { params, services, prices } = paramsData
 
@@ -22,7 +24,7 @@ function Chain(client, data, paramsData) {
   const baseAsset = assets && assets[0]
 
   const prefix = chain.bech32_prefix
-  const consensusPrefix = CONSENSUS_PREFIXES[path] || `${prefix}valcons`
+  const { consensusPrefix } = config
 
   async function apis(type){
     const health = await apiHealth(type)
@@ -45,19 +47,9 @@ function Chain(client, data, paramsData) {
   }
 
   function serviceApis(){
-    return (localConfig().serviceApis || []).map(address => {
+    return (config.serviceApis || []).map(address => {
       return { address }
     })
-  }
-
-  function localConfig(){
-    try {
-      const localConfig = fs.readFileSync('config/config.local.json');
-      const config = localConfig && JSON.parse(localConfig) || {}
-      return config[path] || {}
-    } catch (error) {
-      return {}
-    }
   }
 
   function getDataset(dataset){
@@ -79,13 +71,14 @@ function Chain(client, data, paramsData) {
     prefix,
     consensusPrefix,
     ...data,
+    config,
     params,
     services,
     prices,
     apis,
     apiUrls,
     serviceApis,
-    getDataset
+    getDataset,
   };
 }
 

@@ -3,8 +3,6 @@ import got from 'got';
 import _ from 'lodash'
 import { createAgent, debugLog, executeSync, timeStamp, getAllPages } from '../utils.js';
 
-const SKIP_DELEGATION_COUNT = ['cosmoshub', 'cryptoorgchain', 'evmos']
-const SKIP_SLASHES = ['cryptoorgchain', 'sommelier', 'sentinel']
 const VALIDATOR_THROTTLE = process.env.VALIDATOR_THROTTLE ?? 5000
 
 function ServicesMonitor() {
@@ -43,7 +41,7 @@ function ServicesMonitor() {
                   if(url){
                     const delegations = await getDelegationInfo(url, validator, chain)
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.delegations`, delegations)
-                    const slashes = !SKIP_SLASHES.includes(chain.path) ? (await getSlashes(url, height, validator.operator_address)) : null
+                    const slashes = chain.config.monitor.slashes ? (await getSlashes(url, height, validator.operator_address)) : null
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.slashes`, slashes)
 
                     // throttle as these requests are heavy
@@ -67,7 +65,7 @@ function ServicesMonitor() {
   const getDelegationInfo = async (url, validator, chain) => {
     try {
       let count
-      if(!SKIP_DELEGATION_COUNT.includes(chain.path)){
+      if(chain.config.monitor.delegations){
         const searchParams = new URLSearchParams();
         searchParams.append("pagination.limit", 1);
         searchParams.append("pagination.count_total", true);
