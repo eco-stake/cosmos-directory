@@ -52,11 +52,10 @@ function Chain(client, data, paramsData) {
 
   function localConfig(){
     try {
-      const localConfig = fs.readFileSync('config.local.json');
+      const localConfig = fs.readFileSync('config/config.local.json');
       const config = localConfig && JSON.parse(localConfig) || {}
       return config[path] || {}
     } catch (error) {
-      timeStamp('Failed to parse config.local.json, check JSON is valid', error.message)
       return {}
     }
   }

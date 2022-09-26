@@ -1,7 +1,7 @@
 .vim
 .DS_Store
 
-config.local.json
+config/config.local.json
 
 # Logs
 logs
