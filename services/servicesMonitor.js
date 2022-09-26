@@ -5,6 +5,7 @@ import { createAgent, debugLog, executeSync, timeStamp, getAllPages } from '../u
 
 const SKIP_DELEGATION_COUNT = ['cosmoshub', 'cryptoorgchain', 'evmos']
 const SKIP_SLASHES = ['cryptoorgchain', 'sommelier', 'sentinel']
+const VALIDATOR_THROTTLE = 2500
 
 function ServicesMonitor() {
   const agent = createAgent();
@@ -43,6 +44,9 @@ function ServicesMonitor() {
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.delegations`, delegations)
                     const slashes = !SKIP_SLASHES.includes(chain.path) ? (await getSlashes(url, height, validator.operator_address)) : null
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.slashes`, slashes)
+
+                    // throttle as these requests are heavy
+                    await new Promise(r => setTimeout(r, VALIDATOR_THROTTLE));
                   }else{
                     timeStamp(chain.path, address, 'Validator delegations no API URL')
                   }
