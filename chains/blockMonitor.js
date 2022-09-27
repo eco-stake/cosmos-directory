@@ -31,7 +31,7 @@ function BlockMonitor() {
         const rpcUrl = apis.bestAddress('rpc')
         if (!rpcUrl){
           timeStamp(chain.path, 'No available RPC API for websocket, attempting manual fetch')
-          const restUrl = apis.bestAddress('rest', true)
+          const restUrl = apis.bestServiceAddress()
           if(!restUrl) return timeStamp(chain.path, 'No available REST API')
           return fetchCurrentBlock(client, chain)
         }
@@ -130,7 +130,7 @@ function BlockMonitor() {
 
   async function getRestUrl(chain){
     const apis = await chain.apis()
-    const restUrl = apis.bestAddress('rest', true)
+    const restUrl = apis.bestServiceAddress()
     if (!restUrl) throw new Error('No available REST API')
 
     return restUrl

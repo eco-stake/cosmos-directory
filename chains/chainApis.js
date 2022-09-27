@@ -6,20 +6,26 @@ const BEST_ERROR_DIFF = 5 * 60
 const IGNORE_ERROR_DIFF = 60 * 60
 
 function ChainApis(health) {
-  function bestAddress(type, includeServiceApis) {
-    if(type === 'rest' && includeServiceApis){
-      const bestService = bestAddress('service')
-      if(bestService) return bestService
+  function bestAddress(type) {
+    let urls = Object.values(health[type] || {})
+    if(type === 'rest'){
+      urls = urls.concat(Object.values(health['private'] || {}))
     }
-    const urls = bestUrls(type)
-    const best = _.sample(urls)
+    const best = _.sample(prepareUrls(urls.filter(el => el.available)))
     return best && best.address
   }
 
-  function bestHeight(type, includeServiceApis) {
+  function bestServiceAddress(){
+    const bestService = bestAddress('service')
+    if (bestService) return bestService
+
+    return bestAddress('rest')
+  }
+
+  function bestHeight(type) {
     let urls
     if(type){
-      urls = includeServiceApis ? Object.values(health['service'] || {}) : []
+      urls = []
       urls = urls.concat(Object.values(health[type] || {}))
     }else{
       urls = Object.values(health).reduce((sum, urls) => {
@@ -30,7 +36,20 @@ function ChainApis(health) {
   }
 
   function bestUrls(type) {
-    let urls = Object.values(health[type] || {}).filter(el => el.available)
+    let urls
+    urls = Object.values(health[type] || {}).filter(el => el.available)
+    return prepareUrls(urls)
+  }
+
+  function prepareUrls(urls){
+    return filterUrls(urls).map(el => {
+      const url = { ...el.url }
+      url.address = el.finalAddress || url.address
+      return url
+    })
+  }
+
+  function filterUrls(urls){
     const bestHeight = Math.max(...urls.map(el => el.blockHeight).filter(Number.isFinite))
     urls = urls.filter(el => {
       if (!el.blockHeight)
@@ -54,15 +73,12 @@ function ChainApis(health) {
     })
     return urls.sort((a, b) => {
       return a.responseTime - b.responseTime
-    }).map(el => {
-      const url = { ...el.url }
-      url.address = el.finalAddress || url.address
-      return url
     })
   }
 
   return {
     bestAddress,
+    bestServiceAddress,
     bestUrls,
     bestHeight,
     health

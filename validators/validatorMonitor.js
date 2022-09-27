@@ -43,7 +43,7 @@ function ValidatorMonitor() {
   function getAllValidators(apis, chain, current) {
     const request = async () => {
       try {
-        const url = apis.bestAddress('rest', true)
+        const url = apis.bestServiceAddress()
         if(!url) return timeStamp(chain.path, 'No API URL')
         const pages = await getAllPages((nextKey) => {
           return getValidators(url, 100, {}, nextKey);
@@ -67,7 +67,7 @@ function ValidatorMonitor() {
       const calls = validators.map((validator) => {
         return async () => {
           const apis = await chain.apis()
-          const url = apis.bestAddress('rest', true)
+          const url = apis.bestServiceAddress()
           if(!url) return timeStamp(chain.path, validator.operator_address, 'No API URL')
           const model = new Validator(chain, validator)
           const consensusAddress = model.consensusAddress()

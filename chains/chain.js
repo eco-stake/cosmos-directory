@@ -47,8 +47,14 @@ function Chain(client, data, paramsData, opts) {
   }
 
   function serviceApis(){
-    return (config.serviceApis || []).map(address => {
-      return { address }
+    return (config.serviceApis || []).map(url => {
+      return { ...url, service: true }
+    })
+  }
+
+  function privateApis(){
+    return (config.privateApis || []).map(url => {
+      return { ...url, private: true }
     })
   }
 
@@ -78,6 +84,7 @@ function Chain(client, data, paramsData, opts) {
     apis,
     apiUrls,
     serviceApis,
+    privateApis,
     getDataset,
   };
 }

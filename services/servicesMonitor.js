@@ -36,8 +36,8 @@ function ServicesMonitor() {
               return async () => {
                 try {
                   const apis = await chain.apis()
-                  const height = apis.bestHeight('rest', true)
-                  const url = apis.bestAddress('rest', true)
+                  const height = apis.bestHeight('rest')
+                  const url = apis.bestAddress('rest')
                   if(url){
                     const delegations = await getDelegationInfo(url, validator, chain)
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.delegations`, delegations)
