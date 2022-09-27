@@ -35,7 +35,7 @@ function ChainRegistry(client) {
 
   function getConfig(path){
     try {
-      const systemConfigFile = fs.readFileSync('config/config.json');
+      const systemConfigFile = fs.readFileSync('config.json');
       const systemConfig = systemConfigFile && JSON.parse(systemConfigFile) || {}
       let localConfigFile
       try {
