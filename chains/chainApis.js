@@ -32,7 +32,7 @@ function ChainApis(health) {
         return sum.concat(Object.values(urls))
       }, [])
     }
-    return Math.max(...urls.map(el => el.blockHeight).filter(Number.isFinite))
+    return Math.max(...urls.filter(el => el.available).map(el => el.blockHeight).filter(Number.isFinite))
   }
 
   function bestUrls(type) {
