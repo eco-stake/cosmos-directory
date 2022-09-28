@@ -8,8 +8,8 @@ const IGNORE_ERROR_DIFF = 60 * 60
 function ChainApis(health) {
   function bestAddress(type) {
     let urls = Object.values(health[type] || {})
-    if(type === 'rest'){
-      urls = urls.concat(Object.values(health['private'] || {}))
+    if(['rpc', 'rest'].includes(type)){
+      urls = urls.concat(Object.values(health[`private-${type}`] || {}))
     }
     const best = _.sample(prepareUrls(urls.filter(el => el.available)))
     return best && best.address

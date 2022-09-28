@@ -52,8 +52,8 @@ function Chain(client, data, paramsData, opts) {
     })
   }
 
-  function privateApis(){
-    return (config.privateApis || []).map(url => {
+  function privateApis(type){
+    return ((config.privateApis || {})[type] || []).map(url => {
       return { ...url, private: true }
     })
   }

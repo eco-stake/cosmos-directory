@@ -10,13 +10,13 @@ const HEALTH_TIMEOUT = 5000
 
 function HealthMonitor() {
   const agent = createAgent();
-  const queue = new PQueue({ concurrency: 10 });
+  const queue = new PQueue({ concurrency: 20 });
 
   async function refreshApis(client, chains) {
     timeStamp('Running health checks');
     await Promise.all([...chains].map(async (chain) => {
       const apis = await chain.apis()
-      await Promise.all(['rpc', 'rest', 'service', 'private'].map(async (type) => {
+      await Promise.all(['rpc', 'rest', 'private-rpc', 'private-rest', 'service'].map(async (type) => {
         const urls = getUrls(chain, type)
         const health = apis.health[type] || {};
         const updated = await Promise.all([...urls].map(async (url) => {
@@ -39,8 +39,9 @@ function HealthMonitor() {
     switch (type) {
       case 'service':
         return chain.serviceApis() || []
-      case 'private':
-        return chain.privateApis() || []
+      case 'private-rpc':
+      case 'private-rest':
+        return chain.privateApis(type.replace('private-', '')) || []
       default:
         return chain.apiUrls(type) || []
     }
@@ -66,10 +67,11 @@ function HealthMonitor() {
   function urlPath(type) {
     switch (type) {
       case "rest":
+      case "private-rest":
       case "service":
-      case "private":
         return 'blocks/latest'
       case "rpc":
+      case "private-rpc":
         return "block"
     }
   }
