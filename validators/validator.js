@@ -91,7 +91,7 @@ export class Validator {
         missed: this.blocks.length - this.signedBlocks().length
       })
     }
-    const chainParams = this.chain.params
+    const chainParams = this.chain.params || {}
     const slashingPeriod = chainParams.slashing?.signed_blocks_window
     const slashingMissed = this.data.signing_info?.missed_blocks_counter
     if(slashingPeriod != undefined && slashingMissed != undefined){
