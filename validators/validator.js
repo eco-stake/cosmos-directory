@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import {
-  fromBase64, toHex, Bech32
+  toBase64, fromBase64, toHex, fromHex, Bech32
 } from '@cosmjs/encoding'
 import { sha256 } from '@cosmjs/crypto'
 import { multiply, divide, pow } from 'mathjs'
@@ -107,16 +107,18 @@ export class Validator {
 
   missedBlocks(max){
     const hexAddress = this.hexAddress()
+    const base64Address = toBase64(fromHex(hexAddress))
     const blocks = this.blocks.filter(block => {
-      return !block.signatures.find(el => el === hexAddress)
+      return !block.signatures.find(el => [hexAddress, base64Address].includes(el))
     })
     return blocks.slice(0, max || blocks.length)
   }
 
   signedBlocks(max){
     const hexAddress = this.hexAddress()
+    const base64Address = toBase64(fromHex(hexAddress))
     const blocks = this.blocks.filter(block => {
-      return block.signatures.find(el => el === hexAddress)
+      return block.signatures.find(el => [hexAddress, base64Address].includes(el))
     })
     return blocks.slice(0, max || blocks.length)
   }
