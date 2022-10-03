@@ -69,7 +69,7 @@ function HealthMonitor() {
       case "rest":
       case "private-rest":
       case "service":
-        return 'blocks/latest'
+        return 'cosmos/base/tendermint/v1beta1/blocks/latest'
       case "rpc":
       case "private-rpc":
         return "block"

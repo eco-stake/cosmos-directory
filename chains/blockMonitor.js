@@ -75,7 +75,7 @@ function BlockMonitor() {
   async function fetchCurrentBlock(client, chain){
     try {
       const restUrl = await getRestUrl(chain)
-      const block = await got.get(`${restUrl}blocks/latest`, gotOpts).json()
+      const block = await got.get(`${restUrl}cosmos/base/tendermint/v1beta1/blocks/latest`, gotOpts).json()
       await setCurrentBlock(client, chain, block.block, restUrl)
     } catch (error) {
       timeStamp(chain.path, 'Block update failed', error.message)
@@ -100,7 +100,7 @@ function BlockMonitor() {
       if(!restUrl){
         restUrl = await getRestUrl(chain)
       }
-      block = await got.get(`${restUrl}blocks/${height}`, gotOpts).json()
+      block = await got.get(`${restUrl}cosmos/base/tendermint/v1beta1/blocks/${height}`, gotOpts).json()
       await setBlock(client, chain, block.block)
       if(currentHeight - height < MAX_BLOCKS){
         return fetchBlock(client, chain, currentHeight, height - 1, restUrl)
