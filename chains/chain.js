@@ -1,11 +1,16 @@
 import ChainApis from "./chainApis.js";
 import ChainAsset from './chainAsset.js'
 
-const CONSENSUS_PREFIXES = {
-  cryptoorgchain: 'crocnclcons'
-}
-
-function Chain(client, data, paramsData) {
+function Chain(client, data, paramsData, opts) {
+  const config = {
+    consensusPrefix: `${data.chain.bech32_prefix}valcons`,
+    monitor: {
+      delegations: true,
+      slashes: true,
+      signing_info: true
+    },
+    ...opts
+  }
   const { path, chain, assetlist } = data;
   const { params, services, prices } = paramsData
 
@@ -19,11 +24,15 @@ function Chain(client, data, paramsData) {
   const baseAsset = assets && assets[0]
 
   const prefix = chain.bech32_prefix
-  const consensusPrefix = CONSENSUS_PREFIXES[path] || `${prefix}valcons`
+  const { consensusPrefix } = config
 
   async function apis(type){
     const health = await apiHealth(type)
-    return ChainApis(chain.apis || {}, health)
+    return ChainApis(health)
+  }
+
+  function apiUrls(type){
+    return (chain.apis || {})[type]
   }
   
   async function apiHealth(type) {
@@ -35,6 +44,18 @@ function Chain(client, data, paramsData) {
     }
     const health = await client.json.get('health:' + path, healthPath) || {}
     return type ? {[type]: health[0]} : health
+  }
+
+  function serviceApis(){
+    return (config.serviceApis || []).map(url => {
+      return { ...url, service: true }
+    })
+  }
+
+  function privateApis(type){
+    return ((config.privateApis || {})[type] || []).map(url => {
+      return { ...url, private: true }
+    })
   }
 
   function getDataset(dataset){
@@ -56,11 +77,15 @@ function Chain(client, data, paramsData) {
     prefix,
     consensusPrefix,
     ...data,
+    config,
     params,
     services,
     prices,
     apis,
-    getDataset
+    apiUrls,
+    serviceApis,
+    privateApis,
+    getDataset,
   };
 }
 

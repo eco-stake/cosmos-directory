@@ -91,7 +91,7 @@ export class Validator {
         missed: this.blocks.length - this.signedBlocks().length
       })
     }
-    const chainParams = this.chain.params
+    const chainParams = this.chain.params || {}
     const slashingPeriod = chainParams.slashing?.signed_blocks_window
     const slashingMissed = this.data.signing_info?.missed_blocks_counter
     if(slashingPeriod != undefined && slashingMissed != undefined){
@@ -138,6 +138,22 @@ export class Validator {
     }, {})
   }
 
+  privateNodes(){
+    if(!this.path) return 
+
+    return ['rpc', 'rest'].reduce((sum, type) => {
+      const owned = this.chain.privateApis(type).filter(api => {
+        if(!api.provider) return false
+
+        return [this.path, _.startCase(this.path), this.name.trim()].includes(api.provider)
+      })
+      if (owned.length) {
+        sum[type] = true
+      }
+      return sum
+    }, {})
+  }
+
   toJSON(mixedChains){
     const { path, name, moniker, identity, address, commission, restake, active } = this
     return {
@@ -157,7 +173,8 @@ export class Validator {
       missed_blocks: this.missedBlocks().length,
       missed_blocks_periods: this.missedBlockPeriods(),
       delegations: this.delegations(),
-      public_nodes: this.publicNodes()
+      public_nodes: this.publicNodes(),
+      private_nodes: this.privateNodes()
     }
   }
 }

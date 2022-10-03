@@ -4,7 +4,6 @@ import _ from 'lodash'
 import { debugLog, timeStamp, executeSync, createAgent, getAllPages } from '../utils.js';
 import { Validator } from './validator.js';
 
-const SKIP_SIGNING_INFO = ['irisnet', 'tgrade']
 const TIMEOUT = 5000
 
 function ValidatorMonitor() {
@@ -19,7 +18,7 @@ function ValidatorMonitor() {
   async function refreshValidators(client, chains) {
     timeStamp('Running validator update');
     await Promise.all([...chains].map(async (chain) => {
-      const apis = await chain.apis('rest')
+      const apis = await chain.apis()
 
       const current = await client.json.get('validators:' + chain.path, '$') || {}
 
@@ -44,7 +43,7 @@ function ValidatorMonitor() {
   function getAllValidators(apis, chain, current) {
     const request = async () => {
       try {
-        const url = apis.bestAddress('rest')
+        const url = apis.bestServiceAddress()
         if(!url) return timeStamp(chain.path, 'No API URL')
         const pages = await getAllPages((nextKey) => {
           return getValidators(url, 100, {}, nextKey);
@@ -67,13 +66,13 @@ function ValidatorMonitor() {
       setRank(validators)
       const calls = validators.map((validator) => {
         return async () => {
-          const apis = await chain.apis('rest')
-          const url = apis.bestAddress('rest')
+          const apis = await chain.apis()
+          const url = apis.bestServiceAddress()
           if(!url) return timeStamp(chain.path, validator.operator_address, 'No API URL')
           const model = new Validator(chain, validator)
           const consensusAddress = model.consensusAddress()
           try {
-            validator.signing_info = !SKIP_SIGNING_INFO.includes(chain.path) ? await getSigningInfo(url, consensusAddress) || validator.signing_info : undefined
+            validator.signing_info = chain.config.monitor.signing_info ? await getSigningInfo(url, consensusAddress) || validator.signing_info : undefined
           } catch (error) { debugLog(chain.path, validator.operator_address, 'Validator signing info update failed', error.message) }
         }
       })

@@ -3,12 +3,12 @@ import got from 'got';
 import _ from 'lodash'
 import { createAgent, debugLog, executeSync, timeStamp, getAllPages } from '../utils.js';
 
-const SKIP_DELEGATION_COUNT = ['cosmoshub', 'cryptoorgchain', 'evmos']
-const SKIP_SLASHES = ['cryptoorgchain', 'sommelier', 'sentinel']
+const VALIDATOR_THROTTLE = process.env.VALIDATOR_THROTTLE ?? 5000
 
 function ServicesMonitor() {
   const agent = createAgent();
-  const queue = new PQueue({ concurrency: 20 });
+  const chainQueue = new PQueue({ concurrency: 20 });
+  const serviceQueue = new PQueue({ concurrency: 10 });
   const gotOpts = {
     timeout: { request: 60000 },
     retry: { limit: 2 },
@@ -35,14 +35,17 @@ function ServicesMonitor() {
             const calls = Object.entries(validators.validators).map(([address, validator]) => {
               return async () => {
                 try {
-                  const apis = await chain.apis('rest')
+                  const apis = await chain.apis()
                   const height = apis.bestHeight('rest')
                   const url = apis.bestAddress('rest')
                   if(url){
                     const delegations = await getDelegationInfo(url, validator, chain)
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.delegations`, delegations)
-                    const slashes = !SKIP_SLASHES.includes(chain.path) ? (await getSlashes(url, height, validator.operator_address)) : null
+                    const slashes = chain.config.monitor.slashes ? (await getSlashes(url, height, validator.operator_address)) : null
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.slashes`, slashes)
+
+                    // throttle as these requests are heavy
+                    await new Promise(r => setTimeout(r, VALIDATOR_THROTTLE));
                   }else{
                     timeStamp(chain.path, address, 'Validator delegations no API URL')
                   }
@@ -53,7 +56,7 @@ function ServicesMonitor() {
             debugLog(chain.path, 'Validator delegations update complete')
           } catch (e) { timeStamp(chain.path, 'Validator delegations update failed', e.message) }
         };
-        return queue.add(request, { identifier: chain.path });
+        return chainQueue.add(request, { identifier: chain.path });
       }));
       debugLog('Validator delegations update complete')
     } catch (e) { timeStamp('Validator delegations update failed', e.message) }
@@ -62,14 +65,14 @@ function ServicesMonitor() {
   const getDelegationInfo = async (url, validator, chain) => {
     try {
       let count
-      if(!SKIP_DELEGATION_COUNT.includes(chain.path)){
+      if(chain.config.monitor.delegations){
         const searchParams = new URLSearchParams();
         searchParams.append("pagination.limit", 1);
         searchParams.append("pagination.count_total", true);
         const response = await got.get(`${url}cosmos/staking/v1beta1/validators/${validator.operator_address}/delegations?${searchParams.toString()}`, gotOpts);
         const data = JSON.parse(response.body)
         count = data.pagination?.total
-        count = count ? parseInt(count) : validator.delegations.total_count
+        count = count ? parseInt(count) : validator.delegations?.total_count
       }
       return {
         total_tokens: validator.tokens,
@@ -79,7 +82,7 @@ function ServicesMonitor() {
       if (error.response?.statusCode === 404) {
         return {
           total_tokens: validator.tokens,
-          total_count: validator.delegations.total_count
+          total_count: validator.delegations?.total_count
         }
       }
       throw error
@@ -116,12 +119,13 @@ function ServicesMonitor() {
               return sum
             }, {})
             await client.json.del('chains:' + chain.path, '$.services.coingecko'); // clean up
+            await client.json.set('chains:' + chain.path, '$', {}, { NX: true });
             await client.json.set('chains:' + chain.path, '$.prices', {}, { NX: true });
             await client.json.set('chains:' + chain.path, '$.prices.coingecko', { ...data });
             debugLog(chain.path, 'Coingecko update complete')
           } catch (e) { timeStamp(chain.path, 'Coingecko check failed', e.message) }
         };
-        return queue.add(request, { identifier: chain.path });
+        return serviceQueue.add(request, { identifier: chain.path });
       }));
       debugLog('Coingecko update complete')
     } catch (e) { timeStamp('Coingecko check failed', e.message) }
@@ -171,7 +175,7 @@ function ServicesMonitor() {
             }
           } catch (e) { timeStamp(chain.path, 'Staking Rewards check failed', e.message) }
         };
-        return queue.add(request, { identifier: chain.path });
+        return serviceQueue.add(request, { identifier: chain.path });
       }));
       debugLog('Staking Rewards update complete')
     } catch (e) { timeStamp('Staking Rewards check failed', e.message) }
