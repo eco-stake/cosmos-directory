@@ -107,18 +107,18 @@ export class Validator {
 
   missedBlocks(max){
     const hexAddress = this.hexAddress()
-    const base64Address = toBase64(fromHex(hexAddress))
+    const base64Address = hexAddress && toBase64(fromHex(hexAddress))
     const blocks = this.blocks.filter(block => {
-      return !block.signatures.find(el => [hexAddress, base64Address].includes(el))
+      return !hexAddress || !block.signatures.find(el => [hexAddress, base64Address].includes(el))
     })
     return blocks.slice(0, max || blocks.length)
   }
 
   signedBlocks(max){
     const hexAddress = this.hexAddress()
-    const base64Address = toBase64(fromHex(hexAddress))
+    const base64Address = hexAddress && toBase64(fromHex(hexAddress))
     const blocks = this.blocks.filter(block => {
-      return block.signatures.find(el => [hexAddress, base64Address].includes(el))
+      return hexAddress && block.signatures.find(el => [hexAddress, base64Address].includes(el))
     })
     return blocks.slice(0, max || blocks.length)
   }
