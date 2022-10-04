@@ -26,6 +26,10 @@ function ChainsController(registry) {
         rest: apis.bestUrls('rest'),
         rpc: apis.bestUrls('rpc')
       },
+      proxy_status: {
+        rest: !!apis.bestAddress('rest'),
+        rpc: !!apis.bestAddress('rpc')
+      },
       explorers,
       params,
       services,
