@@ -104,7 +104,6 @@ function ServicesMonitor() {
 
   async function refreshCoingecko(client, chains) {
     try {
-
       await Promise.all([...chains].map((chain) => {
         const request = async () => {
           try {
