@@ -15,9 +15,9 @@ function HealthMonitor() {
   async function refreshApis(client, chains) {
     timeStamp('Running health checks');
     await Promise.all([...chains].map(async (chain) => {
-      const apis = await chain.apis()
       await Promise.all(['rpc', 'rest', 'private-rpc', 'private-rest', 'service'].map(async (type) => {
-        const urls = getUrls(chain, type)
+        const urls = chain.apiUrls(type)
+        const apis = await chain.apis()
         const health = apis.health[type] || {};
         const updated = await Promise.all([...urls].map(async (url) => {
           const urlHealth = health[url.address] || {};
@@ -33,18 +33,6 @@ function HealthMonitor() {
       }));
     }));
     debugLog('Health checks complete')
-  }
-
-  function getUrls(chain, type){
-    switch (type) {
-      case 'service':
-        return chain.serviceApis() || []
-      case 'private-rpc':
-      case 'private-rest':
-        return chain.privateApis(type.replace('private-', '')) || []
-      default:
-        return chain.apiUrls(type) || []
-    }
   }
 
   function checkUrl(url, type, chain, urlHealth) {

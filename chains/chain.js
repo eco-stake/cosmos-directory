@@ -12,7 +12,7 @@ function Chain(client, data, paramsData, opts) {
     ...opts
   }
   const { path, chain, assetlist } = data;
-  const { params, services, prices } = paramsData
+  const { params, versions, services, prices } = paramsData
 
   chain.name = chain.chain_name
   const coingecko = prices?.coingecko || {}
@@ -30,10 +30,6 @@ function Chain(client, data, paramsData, opts) {
     const health = await apiHealth(type)
     return ChainApis(health)
   }
-
-  function apiUrls(type){
-    return (chain.apis || {})[type]
-  }
   
   async function apiHealth(type) {
     const healthPath = {}
@@ -44,6 +40,18 @@ function Chain(client, data, paramsData, opts) {
     }
     const health = await client.json.get('health:' + path, healthPath) || {}
     return type ? {[type]: health[0]} : health
+  }
+
+  function apiUrls(type){
+    switch (type) {
+      case 'service':
+        return serviceApis() || []
+      case 'private-rpc':
+      case 'private-rest':
+        return privateApis(type.replace('private-', '')) || []
+      default:
+        return (chain.apis || {})[type] || []
+    }
   }
 
   function serviceApis(){
@@ -79,6 +87,7 @@ function Chain(client, data, paramsData, opts) {
     ...data,
     config,
     params,
+    versions,
     services,
     prices,
     apis,

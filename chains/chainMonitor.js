@@ -1,6 +1,7 @@
 import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
+import { compareVersions, validate } from 'compare-versions';
 import { bignumber, multiply, divide } from 'mathjs'
 import { createAgent, debugLog, timeStamp, formatNumber } from '../utils.js';
 
@@ -24,18 +25,54 @@ function ChainMonitor() {
         const current = await client.json.get('chains:' + chain.path, '$') || {}
 
         let chainParams = await getChainParams(restUrl, chain, current.params || {});
+        let versionParams = await getVersionParams(chain, apis, current.versions || {})
 
         await client.json.set('chains:' + chain.path, '$', {
           ...current,
           chainId: chain.chainId,
           lastUpdated: Date.now(),
-          params: chainParams || current.params
+          params: chainParams || current.params,
+          versions: versionParams || current.versions
         });
         debugLog(chain.path, 'Chain update complete')
       };
       return queue.add(request, { identifier: chain.path });
     }));
     debugLog('Chain update complete')
+  }
+
+  async function getVersionParams(chain, apis, current){
+    try {
+      const versions = {
+        application_version: [],
+        cosmos_sdk_version: [],
+        tendermint_version: []
+      }
+      await Promise.all(['rest', 'private-rest'].map(async (type) => {
+        const urls = apis.availableUrls(type)
+        await Promise.all(urls.map(async (url) => {
+          try {
+            const response = await got.get(url.finalAddress + '/cosmos/base/tendermint/v1beta1/node_info', gotOpts)
+            const data = JSON.parse(response.body)
+            const { version, cosmos_sdk_version } = data.application_version
+            const tendermint_version = data.default_node_info?.version || data.node_info?.version
+            if(validate(version)) versions.application_version.push(version)
+            if(validate(cosmos_sdk_version)) versions.cosmos_sdk_version.push(cosmos_sdk_version)
+            if(validate(tendermint_version)) versions.tendermint_version.push(tendermint_version)
+          } catch (error) {
+            debugLog(chain.path, url.finalAddress, 'Node update failed:', error.message)
+          }
+        }))
+      }));
+      // use the lowest available version
+      return {
+        application_version: versions.application_version.sort(compareVersions)[0] || current.application_version,
+        cosmos_sdk_version: versions.cosmos_sdk_version.sort(compareVersions)[0] || current.cosmos_sdk_version,
+        tendermint_version: versions.tendermint_version.sort(compareVersions)[0] || current.tendermint_version
+      }
+    } catch (error) {
+      timeStamp(chain.path, 'Version update failed', error.message)
+    }
   }
 
   async function getChainParams(restUrl, chain, current) {
@@ -74,7 +111,7 @@ function ChainMonitor() {
         annualProvision: formatNumber(data.annualProvision)
       }, (_value, key) => _.snakeCase(key))
     } catch (error) {
-      timeStamp(chain.path, 'Update failed', error.message)
+      timeStamp(chain.path, 'Params update failed', error.message)
     }
   }
 

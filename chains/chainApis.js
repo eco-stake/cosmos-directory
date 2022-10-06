@@ -7,11 +7,11 @@ const IGNORE_ERROR_DIFF = 60 * 60
 
 function ChainApis(health) {
   function bestAddress(type) {
-    let urls = Object.values(health[type] || {})
+    let urls = availableUrls(type)
     if(['rpc', 'rest'].includes(type)){
-      urls = urls.concat(Object.values(health[`private-${type}`] || {}))
+      urls = urls.concat(availableUrls(`private-${type}`))
     }
-    const best = _.sample(prepareUrls(urls.filter(el => el.available)))
+    const best = _.sample(prepareUrls(filterUrls(urls)))
     return best && best.address
   }
 
@@ -23,26 +23,29 @@ function ChainApis(health) {
   }
 
   function bestHeight(type) {
-    let urls
-    if(type){
-      urls = []
-      urls = urls.concat(Object.values(health[type] || {}))
-    }else{
-      urls = Object.values(health).reduce((sum, urls) => {
-        return sum.concat(Object.values(urls))
-      }, [])
-    }
-    return Math.max(...urls.filter(el => el.available).map(el => el.blockHeight).filter(Number.isFinite))
+    return Math.max(...availableUrls(type).map(el => el.blockHeight).filter(Number.isFinite))
   }
 
   function bestUrls(type) {
-    let urls
-    urls = Object.values(health[type] || {}).filter(el => el.available)
-    return prepareUrls(urls)
+    return prepareUrls(filterUrls(availableUrls(type)))
+  }
+
+  function availableUrls(type) {
+    return getUrls(type).filter(el => el.available)
+  }
+
+  function getUrls(type) {
+    if(type){
+      return Object.values(health[type] || {})
+    }else{
+      return Object.values(health).reduce((sum, urls) => {
+        return sum.concat(Object.values(urls))
+      }, [])
+    }
   }
 
   function prepareUrls(urls){
-    return filterUrls(urls).map(el => {
+    return urls.map(el => {
       const url = { ...el.url }
       url.address = el.finalAddress || url.address
       return url
@@ -79,8 +82,10 @@ function ChainApis(health) {
   return {
     bestAddress,
     bestServiceAddress,
-    bestUrls,
     bestHeight,
+    bestUrls,
+    availableUrls,
+    getUrls,
     health
   }
 }

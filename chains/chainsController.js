@@ -3,10 +3,10 @@ import { renderJson } from '../utils.js';
 
 function ChainsController(registry) {
   async function chainResponse(chain, summarize) {
-    const { chain_name, network_type, pretty_name, chain_id, status, explorers } = chain.chain;
+    const { chain_name, network_type, pretty_name, chain_id, status, explorers, keywords, codebase } = chain.chain;
     const baseAsset = chain.baseAsset
     const apis = await chain.apis()
-    const { params, services, prices, assets } = chain
+    const { params, versions, services, prices, assets } = chain
     const response = {
       name: chain_name,
       path: chain.path,
@@ -30,11 +30,20 @@ function ChainsController(registry) {
         rest: !!apis.bestAddress('rest'),
         rpc: !!apis.bestAddress('rpc')
       },
+      versions: {
+        ...versions,
+        application_version: versions?.application_version || codebase?.recommended_version,
+        cosmos_sdk_version: versions?.cosmos_sdk_version || codebase?.cosmos_sdk_version,
+        tendermint_version: versions?.tendermint_version || codebase?.tendermint_version,
+        cosmwasm_version: codebase?.cosmwasm_version
+      },
+      cosmwasm_enabled: codebase?.cosmwasm_enabled,
       explorers,
       params,
       services,
       prices,
-      assets
+      assets,
+      keywords
     };
     if (summarize) {
       return response
