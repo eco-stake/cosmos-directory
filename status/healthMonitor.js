@@ -38,10 +38,10 @@ function HealthMonitor() {
     const request = async () => {
       try {
         let address = new URL(url.address).href.replace(/\/$|$/, '/')
-        const response = await getLatestBlock(address, type, urlPath(type))
-        return buildUrl(type, chain, url, urlHealth, response);
+        const { path, response } = await getLatestBlock(address, type, urlPath(type))
+        return buildUrl({ type, chain, url, urlHealth, path, response });
       } catch (error) {
-        return buildUrl(type, chain, url, urlHealth, undefined, error);
+        return buildUrl({ type, chain, url, urlHealth, error });
       }
     };
     return queue.add(request, { identifier: url.address });
@@ -49,11 +49,14 @@ function HealthMonitor() {
 
   async function getLatestBlock(url, type, path){
     try {
-      return await got.get(url + path, {
-        timeout: { request: HEALTH_TIMEOUT },
-        retry: { limit: 1 },
-        agent: agent
-      });
+      return {
+        path,
+        response: await got.get(url + path, {
+          timeout: { request: HEALTH_TIMEOUT },
+          retry: { limit: 1 },
+          agent: agent
+        })
+      }
     } catch (error) {
       const fallback = fallbackPath(type)
       if (fallback && fallback !== path && error.response?.statusCode === 501) {
@@ -84,7 +87,7 @@ function HealthMonitor() {
     }
   }
 
-  function buildUrl(type, chain, url, urlHealth, response, error) {
+  function buildUrl({ type, chain, url, urlHealth, path, response, error }) {
     let timings, body, data
     let blockTime = urlHealth?.blockTime
     let blockHeight = urlHealth?.blockHeight || 0;
@@ -92,7 +95,7 @@ function HealthMonitor() {
     if (!error) {
       ({ timings, body } = response)
       data = JSON.parse(body);
-      const regex = new RegExp(`${urlPath(type)}/?$`)
+      const regex = new RegExp(`${path}/?$`)
       finalAddress = new URL(response.url).href.replace(regex, '').replace(/\/$|$/, '/');
       ({ error, blockTime, blockHeight } = checkHeader(type, data, chain.chainId));
     }else{
