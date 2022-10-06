@@ -25,9 +25,8 @@ function HealthMonitor() {
         }));
         if(!await client.exists('health:' + chain.path)) await client.json.set('health:' + chain.path, '$', {})
         await client.json.set('health:' + chain.path, '$.' + type, updated.reduce((sum, url) => {
-          if (!url)
-            return sum;
-          sum[url.url.address] = url;
+          if (url)
+            sum[url.url.address] = url;
           return sum;
         }, {}));
       }));
@@ -39,17 +38,29 @@ function HealthMonitor() {
     const request = async () => {
       try {
         let address = new URL(url.address).href.replace(/\/$|$/, '/')
-        const response = await got.get(address + urlPath(type), {
-          timeout: { request: HEALTH_TIMEOUT },
-          retry: { limit: 1 },
-          agent: agent
-        });
+        const response = await getLatestBlock(address, type, urlPath(type))
         return buildUrl(type, chain, url, urlHealth, response);
       } catch (error) {
         return buildUrl(type, chain, url, urlHealth, undefined, error);
       }
     };
     return queue.add(request, { identifier: url.address });
+  }
+
+  async function getLatestBlock(url, type, path){
+    try {
+      return await got.get(url + path, {
+        timeout: { request: HEALTH_TIMEOUT },
+        retry: { limit: 1 },
+        agent: agent
+      });
+    } catch (error) {
+      const fallback = fallbackPath(type)
+      if (fallback && fallback !== path && error.response?.statusCode === 501) {
+        return getLatestBlock(url, type, fallback)
+      }
+      throw(error)
+    }
   }
 
   function urlPath(type) {
@@ -61,6 +72,15 @@ function HealthMonitor() {
       case "rpc":
       case "private-rpc":
         return "block"
+    }
+  }
+
+  function fallbackPath(type){
+    switch (type) {
+      case "rest":
+      case "private-rest":
+      case "service":
+        return 'blocks/latest'
     }
   }
 
