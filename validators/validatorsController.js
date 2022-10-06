@@ -51,9 +51,12 @@ function ValidatorsController(chainRegistry, validatorRegistry) {
 
     router.get('/chains/:chain/:validatorAddress', async (ctx, next) => {
       const chain = await chainRegistry.getChain(ctx.params.chain);
-      let validatorAddress = ctx.params.validatorAddress
-      let registryValidator = await validatorRegistry.getRegistryValidatorFromAddress(validatorAddress)
-      let validator = await validatorRegistry.getChainValidator(chain, validatorAddress, registryValidator)
+      let validator
+      if(chain){
+        let validatorAddress = ctx.params.validatorAddress
+        let registryValidator = await validatorRegistry.getRegistryValidatorFromAddress(validatorAddress)
+        validator = await validatorRegistry.getChainValidator(chain, validatorAddress, registryValidator)
+      }
       renderJson(ctx, validator && {
         name: chain.path,
         validator: validator
