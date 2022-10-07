@@ -122,7 +122,7 @@ function HealthMonitor() {
     }
 
     let nowAvailable = false;
-    if (errorCount <= ALLOWED_ERRORS && !rateLimited) {
+    if (errorCount <= ALLOWED_ERRORS) {
       nowAvailable = !error || !!urlHealth.available;
     }
     if (available && !nowAvailable) {
