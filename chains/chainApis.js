@@ -74,6 +74,10 @@ function ChainApis(health) {
 
       return el.lastErrorAt <= (bestErrors + BEST_ERROR_DIFF * 1000)
     })
+    const withoutRateLimit = urls.filter(el => !el.rateLimited)
+    if(withoutRateLimit.length){
+      urls = withoutRateLimit
+    }
     return urls.sort((a, b) => {
       return a.responseTime - b.responseTime
     })
