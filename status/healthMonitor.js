@@ -126,7 +126,7 @@ function HealthMonitor() {
       nowAvailable = !error || !!urlHealth.available;
     }
     if (available && !nowAvailable) {
-      timeStamp('Removing', chain.path, type, url.address, error.message);
+      timeStamp('Removing', chain.path, type, url.address, error?.message);
     } else if (!available && nowAvailable) {
       timeStamp('Adding', chain.path, type, url.address);
     } else if (available && error) {

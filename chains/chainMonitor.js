@@ -2,7 +2,7 @@ import PQueue from 'p-queue';
 import got from 'got';
 import _ from 'lodash'
 import { compareVersions, validate } from 'compare-versions';
-import { bignumber, multiply, divide } from 'mathjs'
+import { bignumber, multiply, divide, floor } from 'mathjs'
 import { createAgent, debugLog, timeStamp, formatNumber } from '../utils.js';
 
 function ChainMonitor() {
@@ -88,7 +88,7 @@ function ChainMonitor() {
       }
       const mintParams = await getMintParams(restUrl, chain) || {}, { blocksPerYear } = mintParams
       const distributionParams = await getDistributionParams(restUrl, chain) || {}, { communityTax } = distributionParams
-      const provisionParams = await getProvisionParams(restUrl, chain, supplyParams) || {}, { annualProvision } = provisionParams
+      const provisionParams = await getProvisionParams(restUrl, chain, supplyParams, blockParams) || {}, { annualProvision } = provisionParams
       if(annualProvision && bondedTokens){
         aprParams = await calculateApr(chain, annualProvision, bondedTokens, communityTax, blocksPerYear, actualBlocksPerYear) || {}
       }
@@ -139,7 +139,8 @@ function ChainMonitor() {
       const actualBlocksPerYear = (365 * 24 * 60 * 60) / actualBlockTime
       return {
         actualBlockTime,
-        actualBlocksPerYear
+        actualBlocksPerYear,
+        currentBlockHeight
       }
     } catch (e) { timeStamp(chain.path, 'Block check failed', e.message) }
   }
@@ -193,45 +194,71 @@ function ChainMonitor() {
     } catch (e) { timeStamp(chain.path, 'Distribution check failed', e.message) }
   }
 
-  async function getProvisionParams(restUrl, chain, supplyParams){
+  async function getProvisionParams(restUrl, chain, supplyParams, blockParams){
     const path = chain.path
     try {
-      if(path === 'crescent') {
-        const params = await got.get('https://apigw.crescent.network/params', gotOpts).json();
-        const provison = params['data'].find(el => el.key === 'liquidstaking.total_reward_ucre_amount_per_year')?.value
-        return { annualProvision: bignumber(provison) }
-      } else if(path === 'emoney'){
-        return { annualProvision: supplyParams.totalSupply * 0.1 }
-      } else if(path === 'evmos' || path === 'echelon'){
+      switch (path) {
+        case 'crescent': {
+          const params = await got.get('https://apigw.crescent.network/params', gotOpts).json();
+          const provison = params['data'].find(el => el.key === 'liquidstaking.total_reward_ucre_amount_per_year')?.value
+          return { annualProvision: bignumber(provison) }
+        }
+        case 'emoney':
+          return { annualProvision: supplyParams.totalSupply * 0.1 }
+        case 'evmos':
+        case 'echelon': {
           const params = await got.get(restUrl + path + '/inflation/v1/params', gotOpts).json();
           const provision = await got.get(restUrl + path + '/inflation/v1/epoch_mint_provision', gotOpts).json();
-          return { 
-            annualProvision: multiply(bignumber(provision.epoch_mint_provision.amount), 365.3, params.params.inflation_distribution.staking_rewards), 
-            inflation: params.params 
+          return {
+            annualProvision: multiply(bignumber(provision.epoch_mint_provision.amount), 365.3, params.params.inflation_distribution.staking_rewards),
+            inflation: params.params
           }
-      } else if(path === 'osmosis'){
+        }
+        case 'osmosis': {
           const params = await got.get(restUrl + 'osmosis/mint/v1beta1/params', gotOpts).json();
           const provision = await got.get(restUrl + 'osmosis/mint/v1beta1/epoch_provisions', gotOpts).json();
-          return { 
-            annualProvision: multiply(bignumber(provision.epoch_provisions), 365.3, params.params.distribution_proportions.staking),
+          const dailyProvision = bignumber(provision.epoch_provisions)
+          return {
+            annualProvision: multiply(dailyProvision, 365.3, params.params.distribution_proportions.staking),
             mint: params.params
           }
-      } else if(path === 'stargaze'){
+        }
+        case 'teritori': {
+          const params = await got.get(restUrl + 'teritori/mint/v1beta1/params', gotOpts).json();
+          const reductionFactor = params.params.reduction_factor
+          const reductionCount = floor(divide(blockParams.currentBlockHeight, params.params.reduction_period_in_blocks))
+          let blockProvision = params.params.genesis_block_provisions
+          for(let i = 0; i < reductionCount; i++){
+            blockProvision = multiply(blockProvision, reductionFactor)
+          }
+          const stakingDistribution = params.params.distribution_proportions.staking
+          return {
+            blockProvision,
+            reductionFactor,
+            reductionCount,
+            stakingDistribution,
+            annualProvision: multiply(blockProvision, blockParams.actualBlocksPerYear, stakingDistribution),
+            mint: undefined
+          }
+        }
+        case 'stargaze': {
           const params = await got.get(restUrl + 'minting/annual-provisions', gotOpts).json();
           return { annualProvision: multiply(params.result, 0.5) }
-      } else {
-        try {
-          const params = await got.get(restUrl + 'cosmos/mint/v1beta1/annual_provisions', gotOpts).json();
-          return { annualProvision: bignumber(params.annual_provisions) }
-        } catch (e) {
-          const params = await got.get(restUrl + 'minting/annual-provisions', gotOpts).json();
-          return { annualProvision: bignumber(params.result) }
+        }
+        default: {
+          try {
+            const params = await got.get(restUrl + 'cosmos/mint/v1beta1/annual_provisions', gotOpts).json();
+            return { annualProvision: bignumber(params.annual_provisions) }
+          } catch (e) {
+            const params = await got.get(restUrl + 'minting/annual-provisions', gotOpts).json();
+            return { annualProvision: bignumber(params.result) }
+          }
         }
       }
     } catch (e) { timeStamp(path, 'Provision check failed', e.message) }
   }
 
-  async function calculateApr(chain, annualProvision, bondedTokens, communityTax, blocksPerYear, actualBlocksPerYear){
+  async function calculateApr(chain, annualProvision, bondedTokens, communityTax, blocksPerYear, actualBlocksPerYear) {
     const path = chain.path
     try {
       if (path === 'sifchain') {
@@ -241,10 +268,10 @@ function ChainMonitor() {
         }
       } else {
         const estimatedApr = (annualProvision / bondedTokens) * (1 - communityTax)
-        if(blocksPerYear){
+        if (blocksPerYear) {
           const calculatedApr = estimatedApr * (actualBlocksPerYear / blocksPerYear)
           return { estimatedApr, calculatedApr }
-        }else{
+        } else {
           return { estimatedApr, calculatedApr: estimatedApr }
         }
       }
