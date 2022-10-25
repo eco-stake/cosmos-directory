@@ -122,7 +122,8 @@ export class Validator {
 
   publicNodes(){
     const apis = this.chain.chain.apis
-    const matchers = [this.moniker.trim().toLowerCase(), this.moniker.toLowerCase().replace(/\s+/g, '')]
+    const matchers = []
+    if(this.moniker) matchers.push(this.moniker.trim().toLowerCase(), this.moniker.toLowerCase().replace(/\s+/g, ''))
     if(this.path) matchers.push(this.path.trim().toLowerCase(), this.path.trim().toLowerCase().replace(/\s+/g, ''))
     if(this.name) matchers.push(this.name.trim().toLowerCase(), this.name.trim().toLowerCase().replace(/\s+/g, ''))
     return Object.keys(apis).reduce((sum, type) => {
