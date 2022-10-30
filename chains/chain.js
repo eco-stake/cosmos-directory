@@ -1,16 +1,16 @@
+import _ from 'lodash'
 import ChainApis from "./chainApis.js";
 import ChainAsset from './chainAsset.js'
 
 function Chain(client, data, paramsData, opts) {
-  const config = {
+  const config = _.merge({
     consensusPrefix: `${data.chain.bech32_prefix}valcons`,
     monitor: {
       delegations: true,
       slashes: true,
       signing_info: true
-    },
-    ...opts
-  }
+    }
+  }, opts)
   const { path, chain, assetlist } = data;
   const { params, versions, services, prices } = paramsData
 
