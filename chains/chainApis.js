@@ -52,7 +52,9 @@ function ChainApis(health) {
     })
   }
 
-  function filterUrls(urls){
+  function filterUrls(originalUrls, includeRateLimited){
+    let urls = [...originalUrls]
+    if(!includeRateLimited) urls = urls.filter(el => !el.rateLimited)
     const bestHeight = Math.max(...urls.map(el => el.blockHeight).filter(Number.isFinite))
     urls = urls.filter(el => {
       if (!el.blockHeight)
@@ -74,10 +76,8 @@ function ChainApis(health) {
 
       return el.lastErrorAt <= (bestErrors + BEST_ERROR_DIFF * 1000)
     })
-    const withoutRateLimit = urls.filter(el => !el.rateLimited)
-    if(withoutRateLimit.length){
-      urls = withoutRateLimit
-    }
+    if(!urls.length && !includeRateLimited) return filterUrls(originalUrls, true)
+
     return urls.sort((a, b) => {
       return a.responseTime - b.responseTime
     })

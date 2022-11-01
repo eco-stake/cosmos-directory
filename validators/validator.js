@@ -121,14 +121,16 @@ export class Validator {
   }
 
   publicNodes(){
-    if(!this.path) return 
-
     const apis = this.chain.chain.apis
+    const matchers = []
+    if(this.moniker) matchers.push(this.moniker.trim().toLowerCase(), this.moniker.toLowerCase().replace(/\s+/g, ''))
+    if(this.path) matchers.push(this.path.trim().toLowerCase(), this.path.trim().toLowerCase().replace(/\s+/g, ''))
+    if(this.name) matchers.push(this.name.trim().toLowerCase(), this.name.trim().toLowerCase().replace(/\s+/g, ''))
     return Object.keys(apis).reduce((sum, type) => {
       const owned = apis[type].filter(api => {
         if(!api.provider) return false
 
-        return [this.path, _.startCase(this.path), this.name.trim()].includes(api.provider)
+        return matchers.includes(api.provider.trim().toLowerCase()) || matchers.includes(api.provider.trim().toLowerCase().replace(/\s+/g, ''))
       })
       if (owned.length) {
         sum[type] = owned
