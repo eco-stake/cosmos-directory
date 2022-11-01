@@ -1,6 +1,11 @@
 import fs from 'fs'
 import _ from 'lodash'
 import Chain from './chain.js'
+import * as Path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = Path.dirname(__filename);
 
 function ChainRegistry(client) {
   async function repository() {
@@ -33,14 +38,17 @@ function ChainRegistry(client) {
     return Chain(client, data, params, config)
   }
 
-  function getConfig(path){
+  function getConfig(path) {
+    const systemConfigFilePath = "../config.json"
+    const localConfigFilePath = "../config/config.local.json"
+
     try {
-      const systemConfigFile = fs.readFileSync('config.json');
+      const systemConfigFile = fs.readFileSync(Path.join(__dirname, systemConfigFilePath));
       const systemConfig = systemConfigFile && JSON.parse(systemConfigFile) || {}
       let localConfigFile
       try {
-        localConfigFile = fs.readFileSync('config/config.local.json');
-      } catch {}
+        localConfigFile = fs.readFileSync(Path.join(__dirname, localConfigFilePath));
+      } catch { }
       const localConfig = localConfigFile && JSON.parse(localConfigFile) || {}
       const config = _.mergeWith(systemConfig, localConfig, (a, b) =>
         _.isArray(b) ? b : undefined
