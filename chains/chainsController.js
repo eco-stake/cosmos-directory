@@ -3,7 +3,7 @@ import { renderJson } from '../utils.js';
 
 function ChainsController(registry) {
   async function chainResponse(chain, summarize) {
-    const { chain_name, network_type, pretty_name, chain_id, status, explorers, keywords, codebase } = chain.chain;
+    const { chain_name, network_type, pretty_name, chain_id, status, explorers, keywords, codebase, bech32_prefix } = chain.chain;
     const baseAsset = chain.baseAsset
     const apis = await chain.apis()
     const { params, versions, services, prices, assets } = chain
@@ -15,6 +15,7 @@ function ChainsController(registry) {
       pretty_name,
       chain_id,
       status,
+      bech32_prefix,
       symbol: baseAsset?.symbol,
       display: baseAsset?.display?.denom,
       denom: baseAsset?.denom,
