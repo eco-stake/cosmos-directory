@@ -16,21 +16,21 @@ function ValidatorImageMonitor() {
     timeStamp('Running validator image update');
     await Promise.all([...chains].map(async (chain) => {
       const current = await client.json.get('validators:' + chain.path, '$') || {}
-      await updateValidatorImages(client, chain.path, current.validators || {});
+      await updateValidatorImages(client, chain, current.validators || {});
       debugLog(chain.path, 'Validator image update complete')
     }));
     debugLog('Validator image update complete')
   }
 
-  function updateValidatorImages(client, path, current) {
+  function updateValidatorImages(client, chain, current) {
     const request = async () => {
       try {
         const calls = Object.entries(current).map(([address, validator]) => {
           return async () => {
             try {
-              const mintscan_image = `https://raw.githubusercontent.com/cosmostation/cosmostation_token_resource/master/moniker/${path}/${address}.png`
+              const mintscan_image = `https://raw.githubusercontent.com/cosmostation/cosmostation_token_resource/master/moniker/${chain.mintscanPath()}/${address}.png`
               await got.get(mintscan_image, gotOpts)
-              await client.json.set('validators:' + path, '$.validators.' + address + '.mintscan_image', mintscan_image);
+              await client.json.set('validators:' + chain.path, '$.validators.' + address + '.mintscan_image', mintscan_image);
             } catch { }
             if (validator.description.identity) {
               try {
@@ -38,7 +38,7 @@ function ValidatorImageMonitor() {
                 if (response && response.body) {
                   const data = JSON.parse(response.body)
                   if (data.them && data.them[0] && data.them[0].pictures) {
-                    await client.json.set('validators:' + path, '$.validators.' + address + '.keybase_image', data.them[0].pictures.primary?.url);
+                    await client.json.set('validators:' + chain.path, '$.validators.' + address + '.keybase_image', data.them[0].pictures.primary?.url);
                   }
                 }
               } catch (e) {
@@ -49,10 +49,10 @@ function ValidatorImageMonitor() {
         })
         await executeSync(calls, 10)
       } catch (error) {
-        timeStamp(path, 'Validator image update failed', error.message)
+        timeStamp(chain.path, 'Validator image update failed', error.message)
       }
     };
-    return queue.add(request, { identifier: path });
+    return queue.add(request, { identifier: chain.path });
   }
 
   return {

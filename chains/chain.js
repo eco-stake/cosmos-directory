@@ -71,6 +71,13 @@ function Chain(client, data, paramsData, opts) {
     return dataset && data[dataset]
   }
 
+  function mintscanPath(){
+    const mintscanExplorer = chain.explorers.find(el => el.kind === 'mintscan')
+    if(!mintscanExplorer?.url) return path
+
+    return mintscanExplorer.url.match(/https:\/\/www.mintscan.io\/([a-z]\w+)\/?$/)[1] || path
+  }
+
   return {
     path: path,
     chainId: chain.chain_id,
@@ -95,6 +102,7 @@ function Chain(client, data, paramsData, opts) {
     serviceApis,
     privateApis,
     getDataset,
+    mintscanPath
   };
 }
 
