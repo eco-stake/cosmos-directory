@@ -22,6 +22,7 @@ function ChainsController(registry) {
       decimals: baseAsset?.decimals,
       coingecko_id: baseAsset?.coingecko_id,
       image: baseAsset?.image,
+      website: chain.website,
       height: apis.bestHeight(),
       best_apis: {
         rest: apis.bestUrls('rest'),
