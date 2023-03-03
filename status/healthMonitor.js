@@ -156,7 +156,7 @@ function HealthMonitor() {
 
   function checkHeader(type, data, chainId) {
     let error, blockTime;
-    if (data && type === 'rpc')
+    if (data && ['rpc', 'private-rpc'].includes(type))
       data = data.result;
 
     const header = data.block.header;
