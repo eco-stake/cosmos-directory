@@ -6,6 +6,7 @@ import { timeStamp, debugLog, createAgent } from '../utils.js';
 const ALLOWED_DELAY = 30 * 60
 const ALLOWED_ERRORS = 10
 const ERROR_COOLDOWN = 10 * 60
+const RATE_LIMIT_COOLDOWN = 24 * 60 * 60
 const HEALTH_TIMEOUT = 5000
 
 function HealthMonitor() {
@@ -103,23 +104,26 @@ function HealthMonitor() {
     }
     const responseTime = timings?.phases?.total
 
-    let { lastError, lastErrorAt, lastSuccessAt, available, rateLimited } = urlHealth;
+    let { lastError, lastErrorAt, lastSuccessAt, available, rateLimited, rateLimitedAt } = urlHealth;
     let errorCount = urlHealth.errorCount || 0;
     if (error) {
       errorCount++;
       lastError = error.message;
       lastErrorAt = Date.now();
-      rateLimited = rateLimited || (response?.statusCode === 429)
+      if(response?.statusCode === 429){
+        rateLimitedAt = Date.now()
+      }
     } else {
       lastSuccessAt = Date.now();
       if (errorCount > 0) {
         const currentTime = Date.now();
-        const cooldownDate = (currentTime - 1000 * ERROR_COOLDOWN);
+        const cooldownDate = currentTime - 1000 * ERROR_COOLDOWN;
         if (lastErrorAt <= cooldownDate) {
           errorCount = 0;
         }
       }
     }
+    rateLimited = rateLimitedAt && rateLimitedAt > Date.now() - 1000 * RATE_LIMIT_COOLDOWN
 
     let nowAvailable = false;
     if (errorCount <= ALLOWED_ERRORS) {
@@ -141,6 +145,7 @@ function HealthMonitor() {
       lastSuccessAt,
       errorCount,
       rateLimited,
+      rateLimitedAt,
       available: nowAvailable,
       blockHeight: blockHeight,
       blockTime: blockTime,
@@ -151,7 +156,7 @@ function HealthMonitor() {
 
   function checkHeader(type, data, chainId) {
     let error, blockTime;
-    if (data && type === 'rpc')
+    if (data && ['rpc', 'private-rpc'].includes(type))
       data = data.result;
 
     const header = data.block.header;
