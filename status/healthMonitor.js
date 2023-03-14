@@ -6,7 +6,7 @@ import { timeStamp, debugLog, createAgent } from '../utils.js';
 const ALLOWED_DELAY = 30 * 60
 const ALLOWED_ERRORS = 10
 const ERROR_COOLDOWN = 10 * 60
-const RATE_LIMIT_COOLDOWN = 24 * 60 * 60
+const RATE_LIMIT_COOLDOWN = 3 * 24 * 60 * 60
 const HEALTH_TIMEOUT = 5000
 
 function HealthMonitor() {
