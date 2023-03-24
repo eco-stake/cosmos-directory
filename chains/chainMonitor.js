@@ -245,6 +245,15 @@ function ChainMonitor() {
           const params = await got.get(restUrl + 'minting/annual-provisions', gotOpts).json();
           return { annualProvision: multiply(params.result, 0.5) }
         }
+        case 'quicksilver': {
+          const params = await got.get(restUrl + 'quicksilver/mint/v1beta1/params', gotOpts).json();
+          const provision = await got.get(restUrl + 'quicksilver/mint/v1beta1/epoch_provisions', gotOpts).json();
+          const dailyProvision = bignumber(provision.epoch_provisions)
+          return {
+            annualProvision: multiply(dailyProvision, 365.3, params.params.distribution_proportions.staking),
+            mint: params.params
+          }
+        }
         default: {
           try {
             const params = await got.get(restUrl + 'cosmos/mint/v1beta1/annual_provisions', gotOpts).json();
