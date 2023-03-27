@@ -93,16 +93,16 @@ function ChainMonitor() {
         aprParams = await calculateApr(chain, annualProvision, bondedTokens, communityTax, blocksPerYear, actualBlocksPerYear) || {}
       }
       const data = {
-        ...current, 
-        ...authzParams, 
-        ...blockParams, 
-        ...stakingParams, 
+        ...current,
+        ...authzParams,
+        ...blockParams,
+        ...stakingParams,
         ...slashingParams,
-        ...supplyParams, 
-        ...mintParams, 
-        ...distributionParams, 
-        ...provisionParams, 
-        ...aprParams 
+        ...supplyParams,
+        ...mintParams,
+        ...distributionParams,
+        ...provisionParams,
+        ...aprParams
       }
       return _.mapKeys({
         ...data,
@@ -214,9 +214,10 @@ function ChainMonitor() {
             inflation: params.params
           }
         }
+        case 'quicksilver':
         case 'osmosis': {
-          const params = await got.get(restUrl + 'osmosis/mint/v1beta1/params', gotOpts).json();
-          const provision = await got.get(restUrl + 'osmosis/mint/v1beta1/epoch_provisions', gotOpts).json();
+          const params = await got.get(restUrl + path + '/mint/v1beta1/params', gotOpts).json();
+          const provision = await got.get(restUrl + path + '/mint/v1beta1/epoch_provisions', gotOpts).json();
           const dailyProvision = bignumber(provision.epoch_provisions)
           return {
             annualProvision: multiply(dailyProvision, 365.3, params.params.distribution_proportions.staking),
