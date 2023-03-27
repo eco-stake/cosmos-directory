@@ -83,6 +83,7 @@ function Chain(client, data, paramsData, opts) {
     chainId: chain.chain_id,
     name: chain.name,
     prettyName: chain.pretty_name,
+    website: chain.website,
     denom: baseAsset?.denom,
     symbol: baseAsset?.symbol,
     decimals: baseAsset?.decimals,
