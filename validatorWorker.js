@@ -7,8 +7,8 @@ import ServicesMonitor from "./services/servicesMonitor.js";
 
 const validatorRefreshSeconds = parseInt(process.env.VALIDATOR_REFRESH || 60 * 5)
 const validatorImageRefreshSeconds = parseInt(process.env.VALIDATOR_IMAGE_REFRESH || 60 * 60 * 12)
-const stakingRewardsKey = process.env.STAKING_REWARDS_KEY
 const servicesRefreshSeconds = parseInt(process.env.STAKING_REWARDS_REFRESH || 60 * 60)
+const stakingRewardsKey = process.env.STAKING_REWARDS_KEY
 
 console.log("Using config:", {
   validatorRefreshSeconds,
