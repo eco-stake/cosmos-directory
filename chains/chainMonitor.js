@@ -199,7 +199,7 @@ function ChainMonitor() {
     try {
       switch (path) {
         case 'crescent': {
-          const params = await got.get('https://apigw.crescent.network/params', gotOpts).json();
+          const params = await got.get('https://apigw-v3.crescent.network/params', gotOpts).json();
           const provison = params['data'].find(el => el.key === 'liquidstaking.total_reward_ucre_amount_per_year')?.value
           return { annualProvision: bignumber(provison) }
         }
