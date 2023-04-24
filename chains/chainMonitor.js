@@ -242,17 +242,21 @@ function ChainMonitor() {
             mint: undefined
           }
         }
-        case 'stargaze': {
-          const params = await got.get(restUrl + 'minting/annual-provisions', gotOpts).json();
-          return { annualProvision: multiply(params.result, 0.5) }
-        }
         default: {
+          const stakingProvisionFactor = {
+            'stargaze': 0.5,
+            'omniflixhub': 0.6
+          }
+          let annualProvision
           try {
             const params = await got.get(restUrl + 'cosmos/mint/v1beta1/annual_provisions', gotOpts).json();
-            return { annualProvision: bignumber(params.annual_provisions) }
+            annualProvision = bignumber(params.annual_provisions)
           } catch (e) {
             const params = await got.get(restUrl + 'minting/annual-provisions', gotOpts).json();
-            return { annualProvision: bignumber(params.result) }
+            annualProvision = bignumber(params.result)
+          }
+          if(annualProvision){
+            return { annualProvision: multiply(annualProvision, stakingProvisionFactor[chain.path] ?? 1) }
           }
         }
       }
