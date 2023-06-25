@@ -32,7 +32,7 @@ function ValidatorImageMonitor() {
               await got.get(mintscan_image, gotOpts)
               await client.json.set('validators:' + chain.path, '$.validators.' + address + '.mintscan_image', mintscan_image);
             } catch { }
-            if (validator.description.identity) {
+            if (validator.description?.identity) {
               try {
                 const response = await got.get("https://keybase.io/_/api/1.0/user/lookup.json?fields=pictures&key_suffix=" + validator.description.identity, gotOpts)
                 if (response && response.body) {

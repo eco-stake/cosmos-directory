@@ -4,11 +4,13 @@ import _ from 'lodash'
 import { createAgent, debugLog, executeSync, timeStamp, getAllPages } from '../utils.js';
 
 const VALIDATOR_THROTTLE = process.env.VALIDATOR_THROTTLE ?? 5000
+const COINGECKO_THROTTLE = process.env.COINGECKO_THROTTLE ?? 5000
 
 function ServicesMonitor() {
   const agent = createAgent();
   const chainQueue = new PQueue({ concurrency: 20 });
   const serviceQueue = new PQueue({ concurrency: 10 });
+  const coingeckoQueue = new PQueue({ concurrency: 1 });
   const gotOpts = {
     timeout: { request: 60000 },
     retry: { limit: 2 },
@@ -17,11 +19,15 @@ function ServicesMonitor() {
 
   async function refreshServices(client, chains, stakingRewardsKey) {
     timeStamp('Running services update');
-    await refreshCoingecko(client, chains)
+    const promises = [
+      refreshCoingecko(client, chains),
+      refreshSkipSupport(client, chains),
+      refreshDelegations(client, chains)
+    ]
     if (stakingRewardsKey) {
-      await refreshStakingRewards(client, chains, stakingRewardsKey)
+      promises.push(refreshStakingRewards(client, chains, stakingRewardsKey))
     }
-    await refreshDelegations(client, chains)
+    await Promise.all(promises)
   }
 
   async function refreshDelegations(client, chains) {
@@ -121,10 +127,13 @@ function ServicesMonitor() {
             await client.json.set('chains:' + chain.path, '$', {}, { NX: true });
             await client.json.set('chains:' + chain.path, '$.prices', {}, { NX: true });
             await client.json.set('chains:' + chain.path, '$.prices.coingecko', { ...data });
+
+            // throttle as Coingecko limits requests
+            await new Promise(r => setTimeout(r, COINGECKO_THROTTLE));
             debugLog(chain.path, 'Coingecko update complete')
           } catch (e) { timeStamp(chain.path, 'Coingecko check failed', e.message) }
         };
-        return serviceQueue.add(request, { identifier: chain.path });
+        return coingeckoQueue.add(request, { identifier: chain.path });
       }));
       debugLog('Coingecko update complete')
     } catch (e) { timeStamp('Coingecko check failed', e.message) }
@@ -178,6 +187,39 @@ function ServicesMonitor() {
       }));
       debugLog('Staking Rewards update complete')
     } catch (e) { timeStamp('Staking Rewards check failed', e.message) }
+  }
+
+  async function refreshSkipSupport(client, chains) {
+    try {
+
+      const skipChains = await got.get('https://api.skip.money/v1/chains', gotOpts).json()
+      await Promise.all([...chains].filter(el => skipChains.chains.includes(el.chainId)).map((chain) => {
+        const request = async () => {
+          try {
+            await client.json.set('chains:' + chain.path, '$', {}, { NX: true });
+            await client.json.set('chains:' + chain.path, '$.services', {}, { NX: true });
+            await client.json.set('chains:' + chain.path, '$.services.skip', { enabled: true });
+            const skipValidators = await got.get('https://api.skip.money/v1/validator_info/' + chain.chainId, gotOpts).json()
+            const validators = await client.json.get('validators:' + chain.path, '$') || {}
+            const calls = Object.entries(validators.validators).map(([address, validator]) => {
+              return async () => {
+                const skipValidator = skipValidators.validator_info.find(v => v.operator_address === validator.operator_address)
+                if (skipValidator) {
+                  const exclude = new Set(['operator_address', 'moniker'])
+                  const skipData = Object.fromEntries(Object.entries(skipValidator).filter(e => !exclude.has(e[0])))
+                  await client.json.set('validators:' + chain.path, `$.validators.${address}.services`, {}, { NX: true });
+                  await client.json.set('validators:' + chain.path, `$.validators.${address}.services.skip`, skipData);
+                }
+              }
+            })
+            await executeSync(calls, 20)
+            debugLog(chain.path, 'Skip update complete')
+          } catch (e) { timeStamp(chain.path, 'Skip update failed', e.message) }
+        };
+        return serviceQueue.add(request, { identifier: chain.path });
+      }));
+      debugLog('Skip update complete')
+    } catch (e) { timeStamp('Skip update failed', e.message) }
   }
 
   return {
