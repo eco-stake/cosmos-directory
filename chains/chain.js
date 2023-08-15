@@ -16,12 +16,14 @@ function Chain(client, data, paramsData, opts) {
 
   chain.name = chain.chain_name
   const coingecko = prices?.coingecko || {}
+
   const assets = assetlist && assetlist.assets.map(asset => {
     const price = coingecko[asset.display]
-
     return ChainAsset(asset, price && { coingecko: price })
   });
   const baseAsset = assets && assets[0]
+
+  const image = chain.logo_URIs?.svg || chain.logo_URIs?.png || baseAsset?.image
 
   const prefix = chain.bech32_prefix
   const { consensusPrefix } = config
@@ -30,7 +32,7 @@ function Chain(client, data, paramsData, opts) {
     const health = await apiHealth(type)
     return ChainApis(health)
   }
-  
+
   async function apiHealth(type) {
     const healthPath = {}
     if(type){
@@ -83,6 +85,7 @@ function Chain(client, data, paramsData, opts) {
     chainId: chain.chain_id,
     name: chain.name,
     prettyName: chain.pretty_name,
+    image,
     website: chain.website,
     denom: baseAsset?.denom,
     symbol: baseAsset?.symbol,

@@ -3,7 +3,7 @@ function ChainAsset(data, prices) {
   const base = data.denom_units.find(el => el.denom === data.base)
   const display = data.denom_units.find(el => el.denom === data.display)
   const logo_URIs = data.logo_URIs
-  const image = logo_URIs && (logo_URIs.svg || logo_URIs.png)
+  const image = logo_URIs?.svg || logo_URIs?.png
 
   return {
     name,
