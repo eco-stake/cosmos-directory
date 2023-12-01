@@ -274,7 +274,7 @@ The on-chain validator attributes are returned as they would be from the REST AP
       },
       "min_self_delegation": "1000000",
       "rank": 54,
-      "mintscan_image": "https://raw.githubusercontent.com/cosmostation/cosmostation_token_resource/master/moniker/osmosis/osmovaloper1u5v0m74mql5nzfx2yh43s2tke4mvzghr6m2n5t.png",
+      "mintscan_image": "https://raw.githubusercontent.com/cosmostation/chainlist/main/chain/osmosis/moniker/osmovaloper1u5v0m74mql5nzfx2yh43s2tke4mvzghr6m2n5t.png",
       "keybase_image": "https://s3.amazonaws.com/keybase_processed_uploads/9d337c16fa39ef101c37131dbec2cf05_360_360.jpg",
       "restake": {
         "address": "osmo1yxsmtnxdt6gxnaqrg0j0nudg7et2gqczed559y",
