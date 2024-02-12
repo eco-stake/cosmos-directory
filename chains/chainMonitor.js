@@ -266,7 +266,18 @@ function ChainMonitor() {
   async function calculateApr(chain, annualProvision, bondedTokens, communityTax, blocksPerYear, actualBlocksPerYear) {
     const path = chain.path
     try {
-      if (path === 'sifchain') {
+      if (path === 'dydx' && process.env.APYBARA_API_KEY) {
+        const opts = {
+          headers: {
+            'X-ACCESS-KEY': `${process.env.APYBARA_API_KEY}`
+          },
+          ...gotOpts
+        }
+        const aprRequest = await got.get("https://api.protocolstaking.info/v0/protocols/dydx", opts).json();
+        return {
+          calculatedApr: aprRequest[0]?.rewardRate
+        }
+      } else if (path === 'sifchain') {
         const aprRequest = await got.get("https://data.sifchain.finance/beta/validator/stakingRewards", gotOpts).json();
         return {
           calculatedApr: aprRequest.rate
