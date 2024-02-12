@@ -189,13 +189,15 @@ function ServicesMonitor() {
                 }
               }).json()
               const providers = providerResponse.data.rewardOptions
-              const validators = await client.json.get('validators:' + chain.path, '$') || {}
+              const validators = await client.json.get('validators:' + chain.path, '$')
+              if(!validators?.validators) return
+
               const calls = Object.entries(validators.validators).map(([address, validator]) => {
                 return async () => {
                   const assetProvider = providers.find(provider => {
                     return provider.validators.find(el => el.address === address)
                   })
-                  if (assetProvider) {
+                  if (assetProvider?.providers) {
                     const provider = assetProvider.providers[0]
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.services`, {}, { NX: true });
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.services.staking_rewards`, {
