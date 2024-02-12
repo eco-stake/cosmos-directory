@@ -82,16 +82,14 @@ function ChainMonitor() {
       const blockParams = await getBlockParams(restUrl, chain) || {}, { actualBlocksPerYear } = blockParams
       const stakingParams = await getStakingParams(restUrl, chain) || {}, { bondedTokens } = stakingParams
       const slashingParams = await getSlashingParams(restUrl, chain) || {}
-      let supplyParams = {}, aprParams = {}
+      let supplyParams = {}
       if (denom) {
         supplyParams = await getSupplyParams(restUrl, chain, bondedTokens) || {}
       }
       const mintParams = await getMintParams(restUrl, chain) || {}, { blocksPerYear } = mintParams
       const distributionParams = await getDistributionParams(restUrl, chain) || {}, { communityTax } = distributionParams
       const provisionParams = await getProvisionParams(restUrl, chain, supplyParams, blockParams) || {}, { annualProvision } = provisionParams
-      if(annualProvision && bondedTokens){
-        aprParams = await calculateApr(chain, annualProvision, bondedTokens, communityTax, blocksPerYear, actualBlocksPerYear) || {}
-      }
+      const aprParams = await calculateApr(chain, annualProvision, bondedTokens, communityTax, blocksPerYear, actualBlocksPerYear) || {}
       const data = {
         ...current,
         ...authzParams,
@@ -282,7 +280,7 @@ function ChainMonitor() {
         return {
           calculatedApr: aprRequest.rate
         }
-      } else {
+      } else if (annualProvision && bondedTokens){
         const estimatedApr = (annualProvision / bondedTokens) * (1 - communityTax)
         if (blocksPerYear) {
           const calculatedApr = estimatedApr * (actualBlocksPerYear / blocksPerYear)
