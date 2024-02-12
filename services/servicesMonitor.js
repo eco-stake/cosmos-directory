@@ -174,7 +174,7 @@ function ServicesMonitor() {
                 {
                   query: `
                     {
-                      rewardOptions(where: {inputAsset: {slugs: ["${asset.slug}"]}, providers: {isVerified: true}, typeKeys: ["pos"]}, limit: 500, order: {metricKey_desc: "staked_tokens"}) {
+                      rewardOptions(where: {inputAsset: {slugs: ["${asset.slug}"]}, typeKeys: ["pos"]}, limit: 500, order: {metricKey_desc: "staked_tokens"}) {
                         providers(limit: 1) {
                           name
                           isVerified
