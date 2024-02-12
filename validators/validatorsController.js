@@ -40,6 +40,16 @@ function ValidatorsController(chainRegistry, validatorRegistry) {
       });
     });
 
+    router.get('/registry', async (ctx, next) => {
+      const validators = await validatorRegistry.getRegistryValidators()
+      renderJson(ctx, {
+        repository: await repositoryResponse(),
+        validators: _.shuffle(validators).map(validator => {
+          return validator.toJSON();
+        })
+      });
+    });
+
     router.get('/chains/:chain', async (ctx, next) => {
       const chain = await chainRegistry.getChain(ctx.params.chain);
       let validators = chain && await validatorRegistry.getChainValidatorsWithRegistry(chain)
@@ -67,7 +77,7 @@ function ValidatorsController(chainRegistry, validatorRegistry) {
       const registryValidator = await validatorRegistry.getRegistryValidator(ctx.params.validator);
       if(registryValidator){
         for (const chainData of registryValidator.chains) {
-          let chain = await chainRegistry.getChain(chainData.name) 
+          let chain = await chainRegistry.getChain(chainData.name)
           if(chain){
             await validatorRegistry.getChainValidator(chain, chainData.address, registryValidator)
           }
@@ -83,7 +93,7 @@ function ValidatorsController(chainRegistry, validatorRegistry) {
       const registryValidator = await validatorRegistry.getRegistryValidator(ctx.params.validator);
       if(registryValidator){
         for (const chainData of registryValidator.chains) {
-          let chain = await chainRegistry.getChain(chainData.name) 
+          let chain = await chainRegistry.getChain(chainData.name)
           if(chain){
             await validatorRegistry.getChainValidator(chain, chainData.address, registryValidator)
           }
