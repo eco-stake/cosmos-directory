@@ -143,12 +143,24 @@ function ServicesMonitor() {
     try {
       const opts = {
         headers: {
-          'Authorization': `${stakingRewardsKey}`
+          'X-API-KEY': `${stakingRewardsKey}`
         },
         ...gotOpts
       }
-      const assets = await got.get('https://api-beta.stakingrewards.com/v1/list/assets', opts).json()
-      const providers = await got.get('https://api-beta.stakingrewards.com/v1/list/providers', opts).json()
+      const assetResponse = await got.post('https://api.stakingrewards.com/public/query', { ...opts, json:
+        {
+          query: `
+            {
+              assets (where: { tags: { tagKeys: ["cosmos-ecosystem"]} }, limit: 500) {
+                  name
+                  slug
+                  symbol
+                }
+            }
+          `
+        }
+      }).json()
+      const assets = assetResponse.data.assets
 
       await Promise.all([...chains].map((chain) => {
         const request = async () => {
@@ -158,19 +170,39 @@ function ServicesMonitor() {
               await client.json.set('chains:' + chain.path, '$', {}, { NX: true });
               await client.json.set('chains:' + chain.path, '$.services', {}, { NX: true });
               await client.json.set('chains:' + chain.path, '$.services.staking_rewards', asset);
-              const assetProviders = await got.get(`https://api-beta.stakingrewards.com/v1/assets/providers/${asset.slug}`, opts).json()
-              const validators = await client.json.get('validators:' + chain.path, '$') || {}
+              const providerResponse = await got.post('https://api.stakingrewards.com/public/query', { ...opts, json:
+                {
+                  query: `
+                    {
+                      rewardOptions(where: {inputAsset: {slugs: ["${asset.slug}"]}, typeKeys: ["pos"]}, limit: 500, order: {metricKey_desc: "staked_tokens"}) {
+                        providers(limit: 1) {
+                          name
+                          isVerified
+                          slug
+                        }
+                        validators(limit: 100) {
+                          address
+                        }
+                      }
+                    }
+                  `
+                }
+              }).json()
+              const providers = providerResponse.data.rewardOptions
+              const validators = await client.json.get('validators:' + chain.path, '$')
+              if(!validators?.validators) return
+
               const calls = Object.entries(validators.validators).map(([address, validator]) => {
                 return async () => {
-                  const assetProvider = assetProviders.providers.find(provider => {
-                    return provider.staking.find(el => el.address === address)
+                  const assetProvider = providers.find(provider => {
+                    return provider.validators.find(el => el.address === address)
                   })
-                  if (assetProvider) {
-                    const provider = providers.find(el => el.name === assetProvider.name)
+                  if (assetProvider?.providers) {
+                    const provider = assetProvider.providers[0]
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.services`, {}, { NX: true });
                     await client.json.set('validators:' + chain.path, `$.validators.${address}.services.staking_rewards`, {
-                      name: assetProvider.name,
-                      verified: assetProvider.isVerified,
+                      name: provider.name,
+                      verified: provider.isVerified,
                       slug: provider.slug
                     });
                   }
