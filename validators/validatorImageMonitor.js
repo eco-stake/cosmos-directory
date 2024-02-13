@@ -28,7 +28,7 @@ function ValidatorImageMonitor() {
         const calls = Object.entries(current).map(([address, validator]) => {
           return async () => {
             try {
-              const mintscan_image = `https://raw.githubusercontent.com/cosmostation/cosmostation_token_resource/master/moniker/${chain.mintscanPath()}/${address}.png`
+              const mintscan_image = `https://raw.githubusercontent.com/cosmostation/chainlist/main/chain/${chain.mintscanPath()}/moniker/${address}.png`
               await got.get(mintscan_image, gotOpts)
               await client.json.set('validators:' + chain.path, '$.validators.' + address + '.mintscan_image', mintscan_image);
             } catch { }
