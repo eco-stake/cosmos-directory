@@ -130,7 +130,7 @@ function ChainMonitor() {
       const currentBlock = await got.get(`${restUrl}cosmos/base/tendermint/v1beta1/blocks/latest`, gotOpts).json()
       const currentBlockTime = new Date(currentBlock.block.header.time) / 1000
       const currentBlockHeight = currentBlock.block.header.height
-      const blocksToCompare = process.env.BLOCKS_TO_COMPARE || 1000
+      const blocksToCompare = process.env.BLOCKS_TO_COMPARE || Math.min(1000, currentBlockHeight - 1)
       const prevBlock = await got.get(`${restUrl}cosmos/base/tendermint/v1beta1/blocks/${currentBlockHeight - blocksToCompare}`, gotOpts).json()
       const prevBlockTime = new Date(prevBlock.block.header.time) / 1000
       const prevBlockHeight = prevBlock.block.header.height
