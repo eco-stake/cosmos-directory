@@ -55,7 +55,7 @@ function ValidatorRegistry(client) {
   async function getChainValidator(chain, address, registryValidator) {
     const chainData = await client.json.get('validators:' + chain.path, {
       path: [
-        '$.validators.' + address,
+        `\$.validators["${address}"]`,
       ]
     })
     if(!chainData) return
