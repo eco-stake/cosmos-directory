@@ -268,7 +268,7 @@ function ChainMonitor() {
       if (path === 'dydx') {
         const aprRequest = await got.get("https://api.lacertalabs.xyz/data/stakingapr", gotOpts).json();
         return {
-          calculatedApr: aprRequest['0']?.average_stakingapr
+          calculatedApr: bignumber(aprRequest['0']?.average_stakingapr)
         }
       } else if (path === 'sifchain') {
         const aprRequest = await got.get("https://data.sifchain.finance/beta/validator/stakingRewards", gotOpts).json();
