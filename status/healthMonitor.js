@@ -8,10 +8,11 @@ const ALLOWED_ERRORS = 10
 const ERROR_COOLDOWN = 10 * 60
 const RATE_LIMIT_COOLDOWN = 3 * 24 * 60 * 60
 const HEALTH_TIMEOUT = 5000
+const HEALTH_CONCURRENCY = parseInt(process.env.HEALTH_CONCURRENCY || 20)
 
 function HealthMonitor() {
   const agent = createAgent();
-  const queue = new PQueue({ concurrency: 20 });
+  const queue = new PQueue({ concurrency: HEALTH_CONCURRENCY });
 
   async function refreshApis(client, chains) {
     timeStamp('Running health checks');
