@@ -124,6 +124,12 @@ function HealthMonitor() {
         }
       }
     }
+    const RATE_LIMITED_DOMAINS = ['publicnode.com', 'pupmos.network']
+    const hostname = new URL(finalAddress).hostname
+    // Partial match hostname to avoid rate limiting
+    if(RATE_LIMITED_DOMAINS.some(domain => hostname.includes(domain))){
+      rateLimitedAt = Date.now()
+    }
     rateLimited = rateLimitedAt && rateLimitedAt > Date.now() - 1000 * RATE_LIMIT_COOLDOWN
 
     let nowAvailable = false;
