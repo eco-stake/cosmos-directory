@@ -8,7 +8,9 @@ import { debugLog } from '../utils.js';
 
 const { createProxyServer } = httpProxy;
 
-const CACHED_REQUESTS = [ 
+const cacheEnabled = process.env.DISABLE_CACHE != '1'
+
+const CACHED_REQUESTS = [
   {
     path: 'cosmos/staking/v1beta1/validators$',
     maxAge: 60
@@ -107,7 +109,7 @@ const ProxyController = (client, registry) => {
     let { path } = ctx.request;
     path = path.split('/').slice(2).join('/')
     const match = CACHED_REQUESTS.find(el => path.match(el.path))
-    if(match){
+    if(cacheEnabled && match){
       if (await ctx.cashed(match.maxAge)){
         debugLog('Using cache', path)
         return
@@ -168,11 +170,11 @@ const ProxyController = (client, registry) => {
       const regexp = new RegExp("\^\\/" + chainName, 'g');
       ctx.req.url = ctx.req.url.replace(regexp, '')
 
-      ctx.res.on('close', () => { 
+      ctx.res.on('close', () => {
         resolve()
       })
 
-      ctx.res.on('finish', () => { 
+      ctx.res.on('finish', () => {
         resolve()
       })
 
