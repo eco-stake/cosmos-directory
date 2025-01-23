@@ -1,6 +1,6 @@
 import _ from "lodash"
 
-const BEST_HEIGHT_DIFF = 5
+const BEST_HEIGHT_DIFF = 10
 const BEST_RESPONSE_DIFF = 1
 const BEST_ERROR_DIFF = 5 * 60
 const IGNORE_ERROR_DIFF = 60 * 60
