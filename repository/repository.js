@@ -85,6 +85,11 @@ function Repository(client, url, branch, opts) {
 
       const data = buildData(dir);
 
+      if(opts.filter && !opts.filter(data)){
+        await client.del([name, dir].join(':'))
+        return
+      }
+
       await client.json.set([name, dir].join(':'), '$', data)
 
       return data
@@ -96,7 +101,7 @@ function Repository(client, url, branch, opts) {
 
     const commit = await latestCommit()
     await client.json.set([name, 'commit'].join(':'), '$', commit)
-    
+
     await client.json.set([name, 'repository'].join(':'), '$', {
       name,
       url,
