@@ -21,7 +21,6 @@ function ServicesMonitor() {
     timeStamp('Running services update');
     const promises = [
       refreshCoingecko(client, chains),
-      refreshSkipSupport(client, chains),
       refreshDelegations(client, chains)
     ]
     if (stakingRewardsKey) {
@@ -219,39 +218,6 @@ function ServicesMonitor() {
       }));
       debugLog('Staking Rewards update complete')
     } catch (e) { timeStamp('Staking Rewards check failed', e.message) }
-  }
-
-  async function refreshSkipSupport(client, chains) {
-    try {
-
-      const skipChains = await got.get('https://api.skip.money/v1/chains', gotOpts).json()
-      await Promise.all([...chains].filter(el => skipChains.chains.includes(el.chainId)).map((chain) => {
-        const request = async () => {
-          try {
-            await client.json.set('chains:' + chain.path, '$', {}, { NX: true });
-            await client.json.set('chains:' + chain.path, '$.services', {}, { NX: true });
-            await client.json.set('chains:' + chain.path, '$.services.skip', { enabled: true });
-            const skipValidators = await got.get('https://api.skip.money/v1/validator_info/' + chain.chainId, gotOpts).json()
-            const validators = await client.json.get('validators:' + chain.path, '$') || {}
-            const calls = Object.entries(validators.validators).map(([address, validator]) => {
-              return async () => {
-                const skipValidator = skipValidators.validator_info.find(v => v.operator_address === validator.operator_address)
-                if (skipValidator) {
-                  const exclude = new Set(['operator_address', 'moniker'])
-                  const skipData = Object.fromEntries(Object.entries(skipValidator).filter(e => !exclude.has(e[0])))
-                  await client.json.set('validators:' + chain.path, `$.validators.${address}.services`, {}, { NX: true });
-                  await client.json.set('validators:' + chain.path, `$.validators.${address}.services.skip`, skipData);
-                }
-              }
-            })
-            await executeSync(calls, 20)
-            debugLog(chain.path, 'Skip update complete')
-          } catch (e) { timeStamp(chain.path, 'Skip update failed', e.message) }
-        };
-        return serviceQueue.add(request, { identifier: chain.path });
-      }));
-      debugLog('Skip update complete')
-    } catch (e) { timeStamp('Skip update failed', e.message) }
   }
 
   return {
