@@ -1,5 +1,5 @@
-function ChainAsset(data, prices) {
-  const { name, description, symbol, coingecko_id, denom_units } = data
+function ChainAsset(data) {
+  const { name, description, symbol, coingecko_id, denom_units, prices } = data
   const base = data.denom_units.find(el => el.denom === data.base)
   const display = data.denom_units.find(el => el.denom === data.display)
   const logo_URIs = data.logo_URIs

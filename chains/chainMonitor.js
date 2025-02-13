@@ -14,6 +14,24 @@ function ChainMonitor() {
     agent: agent
   }
 
+  async function refreshAssets(client, chains) {
+    timeStamp('Running chain assets update');
+    await Promise.all([...chains].map((chain) => {
+      const request = async () => {
+        let assets = buildAssets(chain, chains)
+
+        await client.json.set('chains:' + chain.path, '$', {}, { NX: true });
+        await client.json.set('chains:' + chain.path, '$.chainId', chain.chainId);
+        await client.json.set('chains:' + chain.path, '$.lastUpdated', Date.now());
+        await client.json.set('chains:' + chain.path, '$.assets', assets);
+
+        debugLog(chain.path, 'Chain assets update complete')
+      };
+      return queue.add(request, { identifier: chain.path });
+    }));
+    debugLog('Chain assets update complete')
+  }
+
   async function refreshChains(client, chains) {
     timeStamp('Running chain update');
     await Promise.all([...chains].map((chain) => {
@@ -27,18 +45,41 @@ function ChainMonitor() {
         let chainParams = await getChainParams(restUrl, chain, current.params || {});
         let versionParams = await getVersionParams(chain, apis, current.versions || {})
 
-        await client.json.set('chains:' + chain.path, '$', {
-          ...current,
-          chainId: chain.chainId,
-          lastUpdated: Date.now(),
-          params: chainParams || current.params,
-          versions: versionParams || current.versions
-        });
+        await client.json.set('chains:' + chain.path, '$', {}, { NX: true });
+        await client.json.set('chains:' + chain.path, '$.chainId', chain.chainId);
+        await client.json.set('chains:' + chain.path, '$.lastUpdated', Date.now());
+        if(chainParams) await client.json.set('chains:' + chain.path, '$.params', chainParams);
+        if(versionParams) await client.json.set('chains:' + chain.path, '$.versions', versionParams);
+
         debugLog(chain.path, 'Chain update complete')
       };
       return queue.add(request, { identifier: chain.path });
     }));
     debugLog('Chain update complete')
+  }
+
+  function buildAssets(chain, chains){
+    const assets = chain.assetlist?.assets || []
+    const coingeckoPrices = chain.prices?.coingecko || {}
+    return assets.map(asset => {
+      if (asset.coingecko_id && coingeckoPrices[asset.display]) {
+        asset.prices = {
+          coingecko: coingeckoPrices[asset.display]
+        }
+      }else if (asset.traces) {
+        const trace = asset.traces.find(trace => trace.type === 'ibc')
+        const sourceChain = chains.find(chain => chain.path === trace?.counterparty?.chain_name)
+        const sourceAssets = sourceChain?.assetlist?.assets || []
+        const sourceAsset = sourceAssets.find(el => el.base === trace?.counterparty?.base_denom)
+        const sourceCoingeckoPrice = sourceChain?.prices?.coingecko?.[sourceAsset.display]
+        if (sourceCoingeckoPrice) {
+          asset.prices = {
+            coingecko: sourceCoingeckoPrice
+          }
+        }
+      }
+      return asset
+    });
   }
 
   async function getVersionParams(chain, apis, current){
@@ -307,7 +348,8 @@ function ChainMonitor() {
   }
 
   return {
-    refreshChains
+    refreshChains,
+    refreshAssets
   }
 }
 
