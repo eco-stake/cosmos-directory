@@ -1,5 +1,3 @@
-version: "3.3"
-
 services:
   app:
     build: .
@@ -14,6 +12,8 @@ services:
       - node_modules:/usr/src/app/node_modules
     depends_on:
       - redis
+    labels:
+      - dev.orbstack.domains=*.cosmosdirectory.local
   chain-worker:
     build: .
     environment:
@@ -56,7 +56,7 @@ services:
     ports:
       - '6379:6379'
     command: redis-server --loadmodule /usr/lib/redis/modules/rejson.so --save 20 1 --loglevel warning
-    volumes: 
+    volumes:
       - redis_data:/data
 
 volumes:

@@ -11,15 +11,14 @@ function Chain(client, data, paramsData, opts) {
       signing_info: true
     }
   }, opts)
-  const { path, chain, assetlist } = data;
+  const { path, chain } = data;
   const { params, versions, services, prices } = paramsData
 
   chain.name = chain.chain_name
-  const coingecko = prices?.coingecko || {}
 
-  const assets = assetlist && assetlist.assets.map(asset => {
-    const price = coingecko[asset.display]
-    return ChainAsset(asset, price && { coingecko: price })
+  const assetData = Array.isArray(paramsData.assets) ? paramsData.assets : data.assetlist?.assets
+  const assets = (assetData || []).map(asset => {
+    return ChainAsset(asset)
   });
   const baseAsset = assets && assets[0]
 
