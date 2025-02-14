@@ -71,6 +71,7 @@ function ChainMonitor() {
         const sourceChain = chains.find(chain => chain.path === trace?.counterparty?.chain_name)
         const sourceAssets = sourceChain?.assetlist?.assets || []
         const sourceAsset = sourceAssets.find(el => el.base === trace?.counterparty?.base_denom)
+        asset.coingecko_id = sourceAsset?.coingecko_id
         const sourceCoingeckoPrice = sourceChain?.prices?.coingecko?.[sourceAsset.display]
         if (sourceCoingeckoPrice) {
           asset.prices = {
