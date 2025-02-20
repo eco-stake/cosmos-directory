@@ -89,7 +89,7 @@ function ChainMonitor() {
       const mintParams = await getMintParams(restUrl, chain) || {}, { blocksPerYear } = mintParams
       const distributionParams = await getDistributionParams(restUrl, chain) || {}, { communityTax } = distributionParams
       const provisionParams = await getProvisionParams(restUrl, chain, supplyParams, blockParams) || {}, { annualProvision } = provisionParams
-      const aprParams = await calculateApr(chain, annualProvision, bondedTokens, communityTax, blocksPerYear, actualBlocksPerYear) || {}
+      const aprParams = await calculateApr(restUrl, chain, annualProvision, bondedTokens, communityTax, blocksPerYear, actualBlocksPerYear) || {}
       const data = {
         ...current,
         ...authzParams,
@@ -262,7 +262,7 @@ function ChainMonitor() {
     } catch (e) { timeStamp(path, 'Provision check failed', e.message) }
   }
 
-  async function calculateApr(chain, annualProvision, bondedTokens, communityTax, blocksPerYear, actualBlocksPerYear) {
+  async function calculateApr(restUrl, chain, annualProvision, bondedTokens, communityTax, blocksPerYear, actualBlocksPerYear) {
     const path = chain.path
     try {
       if (path === 'dydx' && process.env.APYBARA_API_KEY) {
@@ -276,10 +276,11 @@ function ChainMonitor() {
         return {
           calculatedApr: aprRequest[0]?.rewardRate
         }
-      } else if (path === 'sifchain') {
-        const aprRequest = await got.get("https://data.sifchain.finance/beta/validator/stakingRewards", gotOpts).json();
+      } else if (path === 'elys') {
+        const aprRequest = await got.get(`${restUrl}/elys-network/elys/masterchef/aprs`, gotOpts).json();
+        const calculatedApr = parseFloat(aprRequest.usdc_apr_elys || 0) + parseFloat(aprRequest.eden_apr_elys || 0)
         return {
-          calculatedApr: aprRequest.rate
+          calculatedApr
         }
       } else if (annualProvision && bondedTokens){
         const estimatedApr = (annualProvision / bondedTokens) * (1 - communityTax)
