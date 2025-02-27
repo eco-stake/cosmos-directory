@@ -43,6 +43,7 @@ async function queueHealthCheck(client, registry, health) {
 async function queueChainCheck(client, registry, monitor) {
   setTimeout(async () => {
     const chains = await registry.getChains()
+    await monitor.refreshAssets(client, chains)
     await monitor.refreshChains(client, chains)
     queueChainCheck(client, registry, monitor)
   }, 1000 * chainRefreshSeconds)
@@ -71,13 +72,15 @@ async function queueChainCheck(client, registry, monitor) {
   const chainRegistry = ChainRegistry(client)
   const chains = await chainRegistry.getChains()
 
+  const chainMonitor = ChainMonitor()
+  await chainMonitor.refreshAssets(client, chains)
+
   const healthMonitor = HealthMonitor()
   await healthMonitor.refreshApis(client, chains)
   if (healthRefreshSeconds > 0) {
     queueHealthCheck(client, chainRegistry, healthMonitor)
   }
 
-  const chainMonitor = ChainMonitor()
   chainMonitor.refreshChains(client, chains)
   if (chainRefreshSeconds > 0) {
     queueChainCheck(client, chainRegistry, chainMonitor)
