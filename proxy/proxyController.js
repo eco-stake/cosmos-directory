@@ -163,7 +163,8 @@ const ProxyController = (client, registry) => {
         followRedirects: true,
         agent: url.protocol === 'https:' ? httpsAgent : httpAgent,
         headers: {
-          'accept-encoding': '*;q=1,gzip=0'
+          'accept-encoding': '*;q=1,gzip=0',
+          'User-Agent': 'cosmos-directory'
         }
       }
       ctx.req.oldPath = ctx.req.url

@@ -9,6 +9,7 @@ function ValidatorImageMonitor() {
   const gotOpts = {
     timeout: { request: 5000 },
     retry: { limit: 1 },
+    headers: { 'User-Agent': 'cosmos-directory' },
     agent: agent
   }
 

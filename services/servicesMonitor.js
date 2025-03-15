@@ -14,6 +14,7 @@ function ServicesMonitor() {
   const gotOpts = {
     timeout: { request: 60000 },
     retry: { limit: 2 },
+    headers: { 'User-Agent': 'cosmos-directory' },
     agent: agent
   }
 
