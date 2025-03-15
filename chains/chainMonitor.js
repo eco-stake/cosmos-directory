@@ -11,6 +11,7 @@ function ChainMonitor() {
   const gotOpts = {
     timeout: { request: 5000 },
     retry: { limit: 3 },
+    headers: { 'User-Agent': 'cosmos-directory' },
     agent: agent
   }
 

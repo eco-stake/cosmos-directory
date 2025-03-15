@@ -12,6 +12,7 @@ function BlockMonitor() {
   const gotOpts = {
     timeout: { request: 5000 },
     retry: { limit: 3 },
+    headers: { 'User-Agent': 'cosmos-directory' },
     agent: agent
   }
   const queue = new PQueue({ concurrency: 20, queueClass: UniqueQueue });
