@@ -142,10 +142,10 @@ function ServicesMonitor() {
   async function refreshStakingRewards(client, chains, stakingRewardsKey) {
     try {
       const opts = {
+        ...gotOpts,
         headers: {
           'X-API-KEY': `${stakingRewardsKey}`
-        },
-        ...gotOpts
+        }
       }
       const assetResponse = await got.post('https://api.stakingrewards.com/public/query', { ...opts, json:
         {
