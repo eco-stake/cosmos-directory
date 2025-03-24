@@ -31,7 +31,7 @@ function ValidatorImageMonitor() {
             try {
               const mintscan_image = `https://raw.githubusercontent.com/cosmostation/chainlist/main/chain/${chain.mintscanPath()}/moniker/${address}.png`
               await got.get(mintscan_image, gotOpts)
-              await client.json.set('validators:' + chain.path, '$.validators.' + address + '.mintscan_image', mintscan_image);
+              await client.json.set('validators:' + chain.path, `$.validators["${address}"].mintscan_image`, mintscan_image);
             } catch { }
             if (validator.description?.identity) {
               try {
@@ -39,7 +39,7 @@ function ValidatorImageMonitor() {
                 if (response && response.body) {
                   const data = JSON.parse(response.body)
                   if (data.them && data.them[0] && data.them[0].pictures) {
-                    await client.json.set('validators:' + chain.path, '$.validators.' + address + '.keybase_image', data.them[0].pictures.primary?.url);
+                    await client.json.set('validators:' + chain.path, `$.validators["${address}"].keybase_image`, data.them[0].pictures.primary?.url);
                   }
                 }
               } catch (e) {

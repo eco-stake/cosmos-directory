@@ -9,7 +9,7 @@ const COINGECKO_THROTTLE = process.env.COINGECKO_THROTTLE ?? 5000
 function ServicesMonitor() {
   const agent = createAgent();
   const chainQueue = new PQueue({ concurrency: 20 });
-  const serviceQueue = new PQueue({ concurrency: 10 });
+  const stakingRewardsQueue = new PQueue({ concurrency: 1 });
   const coingeckoQueue = new PQueue({ concurrency: 1 });
   const gotOpts = {
     timeout: { request: 60000 },
@@ -46,9 +46,9 @@ function ServicesMonitor() {
                   const url = apis.bestAddress('rest')
                   if(url){
                     const delegations = await getDelegationInfo(url, validator, chain)
-                    await client.json.set('validators:' + chain.path, `$.validators.${address}.delegations`, delegations)
+                    await client.json.set('validators:' + chain.path, `$.validators["${address}"].delegations`, delegations)
                     const slashes = chain.config.monitor.slashes ? (await getSlashes(url, height, validator.operator_address)) : null
-                    await client.json.set('validators:' + chain.path, `$.validators.${address}.slashes`, slashes)
+                    await client.json.set('validators:' + chain.path, `$.validators["${address}"].slashes`, slashes)
 
                     // throttle as these requests are heavy
                     await new Promise(r => setTimeout(r, VALIDATOR_THROTTLE));
@@ -198,12 +198,12 @@ function ServicesMonitor() {
               const calls = Object.entries(validators.validators).map(([address, validator]) => {
                 return async () => {
                   const assetProvider = providers.find(provider => {
-                    return provider.validators.find(el => el.address === address)
+                    return provider.validators?.find(el => el.address === address)
                   })
                   if (assetProvider?.providers) {
                     const provider = assetProvider.providers[0]
-                    await client.json.set('validators:' + chain.path, `$.validators.${address}.services`, {}, { NX: true });
-                    await client.json.set('validators:' + chain.path, `$.validators.${address}.services.staking_rewards`, {
+                    await client.json.set('validators:' + chain.path, `$.validators["${address}"].services`, {}, { NX: true });
+                    await client.json.set('validators:' + chain.path, `$.validators["${address}"].services.staking_rewards`, {
                       name: provider.name,
                       verified: provider.isVerified,
                       slug: provider.slug
@@ -220,14 +220,14 @@ function ServicesMonitor() {
 
               const calls = Object.entries(validators.validators).map(([address, validator]) => {
                 return async () => {
-                  await client.json.del('validators:' + chain.path, `$.validators.${address}.services.staking_rewards`);
+                  await client.json.del('validators:' + chain.path, `$.validators["${address}"].services.staking_rewards`);
                 }
               })
               await executeSync(calls, 20)
             }
           } catch (e) { timeStamp(chain.path, 'Staking Rewards check failed', e.message) }
         };
-        return serviceQueue.add(request, { identifier: chain.path });
+        return stakingRewardsQueue.add(request, { identifier: chain.path });
       }));
       debugLog('Staking Rewards update complete')
     } catch (e) { timeStamp('Staking Rewards check failed', e.message) }
