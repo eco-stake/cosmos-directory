@@ -9,6 +9,9 @@
   },
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=26"
+  },
   "dependencies": {
     "@bugsnag/js": "^7.16.2",
     "@bugsnag/plugin-koa": "^7.16.2",

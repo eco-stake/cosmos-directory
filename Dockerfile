@@ -1,4 +1,4 @@
-FROM node:17-alpine
+FROM node:26-alpine
 
 RUN apk update && apk upgrade && apk add git
 
