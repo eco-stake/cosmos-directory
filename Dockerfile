@@ -1,6 +1,6 @@
-FROM node:17-alpine
+FROM node:26-alpine
 
-RUN apk update && apk add git
+RUN apk update && apk upgrade && apk add git
 
 WORKDIR /usr/src/app
 COPY package*.json ./
