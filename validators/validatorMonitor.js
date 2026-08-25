@@ -12,6 +12,7 @@ function ValidatorMonitor() {
   const gotOpts = {
     timeout: { request: TIMEOUT },
     retry: { limit: 3 },
+    headers: { 'User-Agent': 'cosmos-directory' },
     agent: agent
   }
 
@@ -126,4 +127,3 @@ function ValidatorMonitor() {
 }
 
 export default ValidatorMonitor
-

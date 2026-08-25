@@ -11,6 +11,7 @@ function ChainMonitor() {
   const gotOpts = {
     timeout: { request: 5000 },
     retry: { limit: 3 },
+    headers: { 'User-Agent': 'cosmos-directory' },
     agent: agent
   }
 
@@ -309,10 +310,10 @@ function ChainMonitor() {
     try {
       if (path === 'dydx' && process.env.APYBARA_API_KEY) {
         const opts = {
+          ...gotOpts,
           headers: {
             'X-ACCESS-KEY': `${process.env.APYBARA_API_KEY}`
-          },
-          ...gotOpts
+          }
         }
         const aprRequest = await got.get("https://api.protocolstaking.info/v0/protocols/dydx", opts).json();
         return {

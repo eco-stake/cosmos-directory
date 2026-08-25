@@ -56,6 +56,7 @@ function HealthMonitor() {
         response: await got.get(url + path, {
           timeout: { request: HEALTH_TIMEOUT },
           retry: { limit: 1 },
+          headers: { 'User-Agent': 'cosmos-directory' },
           agent: agent
         })
       }
