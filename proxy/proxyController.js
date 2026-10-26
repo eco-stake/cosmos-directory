@@ -128,7 +128,7 @@ const ProxyController = (client, registry) => {
       const chainName = params?.chain
       const chain = chainName && await registry.getChain(chainName)
       const apis = chain && await chain.apis()
-      const requireTxIndex = ['1', 'true'].includes(ctx.get('x-require-tx-index').toLowerCase())
+      const requireTxIndex = ['1', 'true'].includes(ctx.get('x-cosmos-require-index').toLowerCase())
       const url = apis?.bestAddress(type, { requireTxIndex })
       if (!chain) {
         ctx.res.writeHead(404, {
