@@ -52,6 +52,14 @@ RPC and REST API proxies for each chain are available at [{api}.cosmos.directory
 
 The proxies are CORS enabled with no origin restrictions so can be used to access nodes directly from the browser. Some minor caching is applied to common REST queries, particularly those used by REStake. This helps reduce load on the nodes and the Redis cache is extremely fast. 
 
+The proxies can be configured per request with the following headers:
+
+| Header | Description |
+| --- | --- |
+| `X-Require-Tx-Index` | Set to `1` or `true` to only proxy to nodes with `tx_index` enabled. Nodes where this is unknown are excluded, so the request returns 502 if no node qualifies. The setting is detected by the health checks and exposed as `txIndex` on each node in the status API. |
+
+The `DISABLE_CACHE` environment variable set to `1` disables proxy response caching.
+
 ### chains.cosmos.directory
 
 [Chain Registry](https://github.com/cosmos/chain-registry) JSON API, and additional endpoints decorated by Cosmos Directory.

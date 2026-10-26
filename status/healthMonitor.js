@@ -8,6 +8,7 @@ const ALLOWED_ERRORS = 10
 const ERROR_COOLDOWN = 10 * 60
 const RATE_LIMIT_COOLDOWN = 3 * 24 * 60 * 60
 const HEALTH_TIMEOUT = 5000
+const TX_INDEX_REFRESH = 60 * 60
 const HEALTH_CONCURRENCY = parseInt(process.env.HEALTH_CONCURRENCY || 20)
 
 function HealthMonitor() {
@@ -41,7 +42,8 @@ function HealthMonitor() {
       try {
         let address = new URL(url.address).href.replace(/\/$|$/, '/')
         const { path, response } = await getLatestBlock(address, type, urlPath(type))
-        return buildUrl({ type, chain, url, urlHealth, path, response });
+        const txIndex = await checkTxIndex(response, path, type, urlHealth);
+        return buildUrl({ type, chain, url, urlHealth, path, response, ...txIndex });
       } catch (error) {
         return buildUrl({ type, chain, url, urlHealth, error });
       }
@@ -69,6 +71,45 @@ function HealthMonitor() {
     }
   }
 
+  // tx_index rarely changes, so only look it up when unknown or stale
+  async function checkTxIndex(response, path, type, urlHealth) {
+    const { txIndex, txIndexCheckedAt } = urlHealth;
+    if (txIndex !== undefined && txIndexCheckedAt > Date.now() - 1000 * TX_INDEX_REFRESH) {
+      return { txIndex, txIndexCheckedAt };
+    }
+    try {
+      const regex = new RegExp(`${path}/?$`)
+      const address = new URL(response.url).href.replace(regex, '').replace(/\/$|$/, '/');
+      const { body } = await got.get(address + txIndexPath(type), {
+        timeout: { request: HEALTH_TIMEOUT },
+        retry: { limit: 0 },
+        headers: { 'User-Agent': 'cosmos-directory' },
+        agent: agent
+      })
+      const data = JSON.parse(body)
+      const other = ['rpc', 'private-rpc'].includes(type)
+        ? data.result?.node_info?.other
+        : data.default_node_info?.other
+      if (other?.tx_index === 'on') return { txIndex: true, txIndexCheckedAt: Date.now() }
+      if (other?.tx_index === 'off') return { txIndex: false, txIndexCheckedAt: Date.now() }
+    } catch (error) {
+      // not fatal, keep the previous value
+    }
+    return { txIndex, txIndexCheckedAt: Date.now() }
+  }
+
+  function txIndexPath(type) {
+    switch (type) {
+      case "rest":
+      case "private-rest":
+      case "service":
+        return 'cosmos/base/tendermint/v1beta1/node_info'
+      case "rpc":
+      case "private-rpc":
+        return "status"
+    }
+  }
+
   function urlPath(type) {
     switch (type) {
       case "rest":
@@ -90,7 +131,7 @@ function HealthMonitor() {
     }
   }
 
-  function buildUrl({ type, chain, url, urlHealth, path, response, error }) {
+  function buildUrl({ type, chain, url, urlHealth, path, response, error, txIndex = urlHealth?.txIndex, txIndexCheckedAt = urlHealth?.txIndexCheckedAt }) {
     let timings, body, data
     let blockTime = urlHealth?.blockTime
     let blockHeight = urlHealth?.blockHeight || 0;
@@ -158,6 +199,8 @@ function HealthMonitor() {
       blockHeight: blockHeight,
       blockTime: blockTime,
       responseTime,
+      txIndex,
+      txIndexCheckedAt,
       lastCheck: Date.now()
     };
   }

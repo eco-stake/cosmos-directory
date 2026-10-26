@@ -6,11 +6,12 @@ const BEST_ERROR_DIFF = 5 * 60
 const IGNORE_ERROR_DIFF = 60 * 60
 
 function ChainApis(health) {
-  function bestAddress(type) {
+  function bestAddress(type, { requireTxIndex } = {}) {
     let urls = availableUrls(type)
     if(['rpc', 'rest'].includes(type)){
       urls = urls.concat(availableUrls(`private-${type}`))
     }
+    if(requireTxIndex) urls = urls.filter(el => el.txIndex === true)
     const best = _.sample(prepareUrls(filterUrls(urls)))
     return best && best.address
   }
