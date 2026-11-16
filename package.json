@@ -28,7 +28,7 @@
     "http-proxy": "^1.18.1",
     "is-stream": "^2.0.0",
     "isomorphic-git": "^1.13.1",
-    "koa": "^2.13.4",
+    "koa": "^3.1.2",
     "koa-is-json": "^1.0.0",
     "koa-router": "^10.1.1",
     "koa-subdomain": "^3.0.0",
