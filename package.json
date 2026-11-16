@@ -27,7 +27,7 @@
     "got": "^15.1.0",
     "http-proxy": "^1.18.1",
     "is-stream": "^2.0.0",
-    "isomorphic-git": "^1.13.1",
+    "isomorphic-git": "^1.38.6",
     "koa": "^2.13.4",
     "koa-is-json": "^1.0.0",
     "koa-router": "^10.1.1",
