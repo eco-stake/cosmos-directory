@@ -15,9 +15,9 @@
   "dependencies": {
     "@bugsnag/js": "^7.16.2",
     "@bugsnag/plugin-koa": "^7.16.2",
-    "@cosmjs/crypto": "^0.28.4",
+    "@cosmjs/crypto": "^0.39.0",
     "@cosmjs/encoding": "^0.28.4",
-    "@koa/cors": "^3.1.0",
+    "@koa/cors": "^5.0.0",
     "agentkeepalive": "^4.2.1",
     "bytes": "^3.1.0",
     "compare-versions": "^5.0.1",
@@ -27,18 +27,18 @@
     "got": "^15.1.0",
     "http-proxy": "^1.18.1",
     "is-stream": "^2.0.0",
-    "isomorphic-git": "^1.13.1",
-    "koa": "^2.13.4",
+    "isomorphic-git": "^1.38.6",
+    "koa": "^3.1.2",
     "koa-is-json": "^1.0.0",
     "koa-router": "^10.1.1",
     "koa-subdomain": "^3.0.0",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
     "mathjs": "^10.5.0",
     "p-queue": "^7.2.0",
     "path-match": "^1.2.4",
     "redis": "^4.0.4",
     "ripemd160": "^2.0.2",
-    "rpc-websockets": "^7.4.18",
-    "uuid": "^8.3.2"
+    "rpc-websockets": "^10.0.1",
+    "uuid": "^14.0.3"
   }
 }
